@@ -2995,11 +2995,11 @@ void Node_List::dump_simple() const {
 //=============================================================================
 //------------------------------remove-----------------------------------------
 void Unique_Node_List::remove(Node* n) {
-  if (_in_worklist.test(n->_idx)) {
+  if (_in_worklist->test(n->_idx)) {
     for (uint i = 0; i < size(); i++) {
       if (_nodes[i] == n) {
         map(i, Node_List::pop());
-        _in_worklist.remove(n->_idx);
+        _in_worklist->clear_bit(n->_idx);
         return;
       }
     }
@@ -3009,12 +3009,12 @@ void Unique_Node_List::remove(Node* n) {
 
 //-----------------------remove_useless_nodes----------------------------------
 // Remove useless nodes from worklist
-void Unique_Node_List::remove_useless_nodes(VectorSet &useful) {
+void Unique_Node_List::remove_useless_nodes(const BitMap& useful) {
   for (uint i = 0; i < size(); ++i) {
-    Node *n = at(i);
+    Node* n = at(i);
     assert( n != NULL, "Did not expect null entries in worklist");
     if (!useful.test(n->_idx)) {
-      _in_worklist.remove(n->_idx);
+      _in_worklist->clear_bit(n->_idx);
       map(i, Node_List::pop());
       --i;  // Visit popped node
       // If it was last entry, loop terminates since size() was also reduced

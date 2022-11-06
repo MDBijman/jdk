@@ -25,9 +25,9 @@
 #ifndef SHARE_OPTO_NODE_HPP
 #define SHARE_OPTO_NODE_HPP
 
-#include "libadt/vectset.hpp"
 #include "opto/compile.hpp"
 #include "opto/type.hpp"
+#include "utilities/bitMap.inline.hpp"
 #include "utilities/copy.hpp"
 
 // Portions of code courtesy of Clifford Click
@@ -1581,54 +1581,64 @@ public:
 //------------------------------Unique_Node_List-------------------------------
 class Unique_Node_List : public Node_List {
   friend class VMStructs;
-  VectorSet _in_worklist;
+  ArenaBitMap* _in_worklist;
   uint _clock_index;            // Index in list where to pop from next
-public:
-  Unique_Node_List() : Node_List(), _clock_index(0) {}
-  Unique_Node_List(Arena *a) : Node_List(a), _in_worklist(a), _clock_index(0) {}
+
+  bool contains(const Node* n) const; // leave it undefined. use faster member() instead.
+
+ public:
+  Unique_Node_List() : _in_worklist(NEW_RESOURCE_OBJ(ArenaBitMap)), _clock_index(0) {
+    new (_in_worklist) ArenaBitMap(Thread::current()->resource_area(), 0);
+  }
+
+  Unique_Node_List(Arena* a) : Node_List(a), _in_worklist(NEW_ARENA_OBJ(a, ArenaBitMap)), _clock_index(0) {
+    // Like previous VectorSet, we does NOT explicitly manage the underlying storeage here.
+    // We assume _arena is managed by ResourceMark. Two excpetions are Compile::comp_arena and Compile::node_arena.
+    // They are destructed along with the dtor of Compile.
+    Compile* C = Compile::current();
+    assert(a->mark_managed() || a == C->comp_arena() || a == C->node_arena(), "Unique_Node_List is not managed. MemLeak?");
+    new (_in_worklist) ArenaBitMap(a, 0);
+  }
 
   void remove( Node *n );
-  bool member( Node *n ) { return _in_worklist.test(n->_idx) != 0; }
-  VectorSet& member_set(){ return _in_worklist; }
+  bool member( Node *n ) { return _in_worklist->test(n->_idx); }
+  const BitMap& member_set() const { return *_in_worklist; }
 
   void push(Node* b) {
-    if( !_in_worklist.test_set(b->_idx) )
+    if (!_in_worklist->test_set(b->_idx)) {
       Node_List::push(b);
+    }
   }
+
   Node *pop() {
     if( _clock_index >= size() ) _clock_index = 0;
     Node *b = at(_clock_index);
     map( _clock_index, Node_List::pop());
     if (size() != 0) _clock_index++; // Always start from 0
-    _in_worklist.remove(b->_idx);
+    _in_worklist->clear_bit(b->_idx);
     return b;
   }
   Node *remove(uint i) {
     Node *b = Node_List::at(i);
-    _in_worklist.remove(b->_idx);
+    _in_worklist->clear_bit(b->_idx);
     map(i,Node_List::pop());
     return b;
   }
   void yank(Node *n) {
-    _in_worklist.remove(n->_idx);
+    _in_worklist->remove(n->_idx);
     Node_List::yank(n);
   }
   void  clear() {
-    _in_worklist.clear();        // Discards storage but grows automatically
+    _in_worklist->clear();        // Discards storage but grows automatically
     Node_List::clear();
     _clock_index = 0;
   }
 
   // Used after parsing to remove useless nodes before Iterative GVN
-  void remove_useless_nodes(VectorSet& useful);
-
-  bool contains(const Node* n) const {
-    fatal("use faster member() instead");
-    return false;
-  }
+  void remove_useless_nodes(const BitMap& useful);
 
 #ifndef PRODUCT
-  void print_set() const { _in_worklist.print(); }
+  void print_set() const { _in_worklist->print_on(tty); }
 #endif
 };
 

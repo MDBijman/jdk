@@ -311,14 +311,13 @@ void  NodeHash::clear() {
 //-----------------------remove_useless_nodes----------------------------------
 // Remove useless nodes from value table,
 // implementation does not depend on hash function
-void NodeHash::remove_useless_nodes(VectorSet &useful) {
-
+void NodeHash::remove_useless_nodes(const BitMap& useful) {
   // Dead nodes in the hash table inherited from GVN should not replace
   // existing nodes, remove dead nodes.
   uint max = size();
-  Node *sentinel_node = sentinel();
+  Node* sentinel_node = sentinel();
   for( uint i = 0; i < max; ++i ) {
-    Node *n = at(i);
+    Node* n = at(i);
     if(n != NULL && n != sentinel_node && !useful.test(n->_idx)) {
       debug_only(n->exit_hash_lock()); // Unlock the node when removed
       _table[i] = sentinel_node;       // Replace with placeholder

@@ -199,6 +199,10 @@ class BitMap {
   inline void set_bit(idx_t bit);
   inline void clear_bit(idx_t bit);
 
+  // lenient getter in alignment with VectorSet
+  bool test(idx_t bit) const { return bit >= _size ? false : at(bit); }
+  void remove(idx_t bit);
+
   // Attempts to change a bit to a desired value. The operation returns true if
   // this thread changed the value of the bit. It was changed with a RMW operation
   // using the specified memory_order. The operation returns false if the change
@@ -363,6 +367,9 @@ class GrowableBitMap : public BitMap {
     bm_word_t* new_map = reallocate(map(), size(), new_size_in_bits, clear);
     update(new_map, new_size_in_bits);
   }
+
+  // Grow and set if bit is not set and return the previous value.
+  bool test_set(idx_t bit);
 };
 
 // A concrete implementation of the "abstract" BitMap class.
@@ -383,11 +390,10 @@ class ArenaBitMap : public GrowableBitMap<ArenaBitMap> {
  public:
   // Clears the bitmap memory.
   ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear = true);
+  ~ArenaBitMap() { free(map(), size()); }
 
   bm_word_t* allocate(idx_t size_in_words) const;
-  void free(bm_word_t* map, idx_t size_in_words) const {
-    // ArenaBitMaps currently don't free memory.
-  }
+  void free(bm_word_t* map, idx_t size_in_words) const;
 };
 
 // A BitMap with storage in the current threads resource area.

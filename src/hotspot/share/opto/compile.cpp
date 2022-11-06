@@ -319,7 +319,7 @@ void Compile::identify_useful_nodes(Unique_Node_List &useful) {
 // list. Consider all non-useful nodes to be useless i.e., dead nodes.
 void Compile::update_dead_node_list(Unique_Node_List &useful) {
   uint max_idx = unique();
-  VectorSet& useful_node_set = useful.member_set();
+  const BitMap& useful_node_set = useful.member_set();
 
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
@@ -945,7 +945,7 @@ Compile::Compile( ciEnv* ci_env,
     // The following is a dummy for the sake of GraphKit::gen_stub
     Unique_Node_List for_igvn(comp_arena());
     set_for_igvn(&for_igvn);  // not used, but some GraphKit guys push on this
-    PhaseGVN gvn(Thread::current()->resource_area(),255);
+    PhaseGVN gvn(Thread::current()->resource_area(), 255);
     set_initial_gvn(&gvn);    // not significant, but GraphKit guys use it pervasively
     gvn.transform_no_reclaim(top());
 
@@ -1178,7 +1178,7 @@ void Compile::print_missing_nodes() {
       _log->stamp();
       _log->end_head();
     }
-    VectorSet& useful_member_set = useful.member_set();
+    const BitMap& useful_member_set = useful.member_set();
     int last_idx = l_nodes_by_walk;
     for (int i = 0; i < last_idx; i++) {
       if (useful_member_set.test(i)) {

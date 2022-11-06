@@ -70,6 +70,21 @@ bm_word_t* GrowableBitMap<BitMapWithAllocator>::reallocate(bm_word_t* old_map, i
   return map;
 }
 
+template <class BitMapWithAllocator>
+bool GrowableBitMap<BitMapWithAllocator>::test_set(idx_t bit) {
+  if (bit >= size()) { // grow
+    idx_t next_bit = next_power_of_2(bit);
+    resize(next_bit, true);
+  }
+
+  bool prev = at(bit);
+  if (!prev) {
+    set_bit(bit);
+  }
+
+  return prev;
+}
+
 ArenaBitMap::ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear)
   : GrowableBitMap<ArenaBitMap>(), _arena(arena) {
   initialize(size_in_bits, clear);
@@ -77,6 +92,12 @@ ArenaBitMap::ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear)
 
 bm_word_t* ArenaBitMap::allocate(idx_t size_in_words) const {
   return (bm_word_t*)_arena->Amalloc(size_in_words * BytesPerWord);
+}
+
+void ArenaBitMap::free(bm_word_t* map, idx_t size_in_words) const {
+  if (_arena != nullptr && !_arena->mark_managed()) {
+    _arena->Afree(map, size_in_words);
+  }
 }
 
 ResourceBitMap::ResourceBitMap(idx_t size_in_bits, bool clear)
@@ -250,6 +271,12 @@ void BitMap::clear_large_range(idx_t beg, idx_t end) {
   clear_range_within_word(beg, bit_index(beg_full_word));
   clear_large_range_of_words(beg_full_word, end_full_word);
   clear_range_within_word(bit_index(end_full_word), end);
+}
+
+void BitMap::remove(idx_t bit) {
+  if (bit < _size) {
+    clear_bit(bit);
+  }
 }
 
 void BitMap::at_put(idx_t offset, bool value) {
