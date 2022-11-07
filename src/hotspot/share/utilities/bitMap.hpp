@@ -390,7 +390,7 @@ class ArenaBitMap : public GrowableBitMap<ArenaBitMap> {
  public:
   // Clears the bitmap memory.
   ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear = true);
-  ~ArenaBitMap() { free(map(), size()); }
+  ~ArenaBitMap() { free(map(), size_in_words()); }
 
   bm_word_t* allocate(idx_t size_in_words) const;
   void free(bm_word_t* map, idx_t size_in_words) const;

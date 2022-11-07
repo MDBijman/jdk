@@ -95,7 +95,10 @@ bm_word_t* ArenaBitMap::allocate(idx_t size_in_words) const {
 }
 
 void ArenaBitMap::free(bm_word_t* map, idx_t size_in_words) const {
-  if (_arena != nullptr && !_arena->mark_managed()) {
+  if (_arena != nullptr && !_arena->mark_managed() && _arena->contains(map)) {
+    // We still need to check whether _arena contains map before calling Afree
+    // ~ResourceMark may have already reclaimed the underlying storage because
+    // RAII doesnot ensure orders.
     _arena->Afree(map, size_in_words);
   }
 }
