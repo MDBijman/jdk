@@ -109,7 +109,7 @@ bm_word_t* ArenaBitMap::allocate(idx_t size_in_words) const {
 }
 
 bm_word_t* ArenaBitMap::reallocate(bm_word_t* old_map, size_t old_size_in_words, size_t new_size_in_words) const {
-  return pseudo_reallocate(*this, old_map, old_size_in_words, new_size_in_words);
+  return (bm_word_t*) _arena->Arealloc(old_map, old_size_in_words * BytesPerWord, new_size_in_words * BytesPerWord);
 }
 
 ResourceBitMap::ResourceBitMap(idx_t size_in_bits, bool clear)
