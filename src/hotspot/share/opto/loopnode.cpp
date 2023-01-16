@@ -27,7 +27,6 @@
 #include "compiler/compileLog.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
@@ -47,6 +46,8 @@
 #include "opto/superword.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "utilities/powerOfTwo.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 //=============================================================================
 //--------------------------is_cloop_ind_var-----------------------------------
@@ -3506,11 +3507,11 @@ bool IdealLoopTree::beautify_loops( PhaseIdealLoop *phase ) {
 //------------------------------allpaths_check_safepts----------------------------
 // Allpaths backwards scan from loop tail, terminating each path at first safepoint
 // encountered.  Helper for check_safepts.
-void IdealLoopTree::allpaths_check_safepts(VectorSet &visited, Node_List &stack) {
+void IdealLoopTree::allpaths_check_safepts(BitMap &visited, Node_List &stack) {
   assert(stack.size() == 0, "empty stack");
   stack.push(_tail);
   visited.clear();
-  visited.set(_tail->_idx);
+  visited.set_bit(_tail->_idx);
   while (stack.size() > 0) {
     Node* n = stack.pop();
     if (n->is_Call() && n->as_Call()->guaranteed_safepoint()) {
@@ -3527,7 +3528,7 @@ void IdealLoopTree::allpaths_check_safepts(VectorSet &visited, Node_List &stack)
       for (uint i = start; i < end; i++) {
         Node* in = n->in(i);
         assert(in->is_CFG(), "must be");
-        if (!visited.test_set(in->_idx) && is_member(_phase->get_loop(in))) {
+        if (!visited.test_set_bit(in->_idx) && is_member(_phase->get_loop(in))) {
           stack.push(in);
         }
       }
@@ -3589,7 +3590,7 @@ void IdealLoopTree::allpaths_check_safepts(VectorSet &visited, Node_List &stack)
 //     from the tail to the head, terminating a path when a call or sfpt
 //     is encountered, to find the ncsfpt's that are closest to the tail.
 //
-void IdealLoopTree::check_safepts(VectorSet &visited, Node_List &stack) {
+void IdealLoopTree::check_safepts(BitMap &visited, Node_List &stack) {
   // Bottom up traversal
   IdealLoopTree* ch = _child;
   if (_child) _child->check_safepts(visited, stack);
@@ -4264,7 +4265,7 @@ void PhaseIdealLoop::build_and_optimize() {
 
   _created_loop_node = false;
 
-  VectorSet visited;
+  ResourceBitMap visited;
   // Pre-grow the mapping from Nodes to IdealLoopTrees.
   _nodes.map(C->unique(), NULL);
   memset(_nodes.adr(), 0, wordSize * C->unique());
@@ -4389,7 +4390,7 @@ void PhaseIdealLoop::build_and_optimize() {
   // Don't need C->root() on worklist since
   // it will be processed among C->top() inputs
   worklist.push(C->top());
-  visited.set(C->top()->_idx); // Set C->top() as visited now
+  visited.set_bit(C->top()->_idx); // Set C->top() as visited now
   build_loop_early( visited, worklist, nstack );
 
   // Given early legal placement, try finding counted loops.  This placement
@@ -4651,7 +4652,7 @@ void PhaseIdealLoop::verify() const {
   int old_progress = C->major_progress();
   ResourceMark rm;
   PhaseIdealLoop loop_verify(_igvn, this);
-  VectorSet visited;
+  ResourceBitMap visited;
 
   fail = 0;
   verify_compare(C->root(), &loop_verify, visited);
@@ -4665,9 +4666,9 @@ void PhaseIdealLoop::verify() const {
 
 //------------------------------verify_compare---------------------------------
 // Make sure me and the given PhaseIdealLoop agree on key data structures
-void PhaseIdealLoop::verify_compare( Node *n, const PhaseIdealLoop *loop_verify, VectorSet &visited ) const {
+void PhaseIdealLoop::verify_compare( Node *n, const PhaseIdealLoop *loop_verify, BitMap &visited ) const {
   if( !n ) return;
-  if( visited.test_set( n->_idx ) ) return;
+  if( visited.test_set_bit( n->_idx ) ) return;
   if( !_nodes[n->_idx] ) {      // Unreachable
     assert( !loop_verify->_nodes[n->_idx], "both should be unreachable" );
     return;
@@ -5237,7 +5238,7 @@ int PhaseIdealLoop::build_loop_tree_impl( Node *n, int pre_order ) {
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // First pass computes the earliest controlling node possible.  This is the
 // controlling input with the deepest dominating depth.
-void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_early( BitMap &visited, Node_List &worklist, Node_Stack &nstack ) {
   while (worklist.size() != 0) {
     // Use local variables nstack_top_n & nstack_top_i to cache values
     // on nstack's top.
@@ -5278,7 +5279,7 @@ void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, 
             }
             // Carry on with the recursion "as if" we are walking
             // only the control input
-            if( !visited.test_set( in->_idx ) ) {
+            if( !visited.test_set_bit( in->_idx ) ) {
               worklist.push(in);      // Visit this guy later, using worklist
             }
             // Get next node from nstack:
@@ -5298,7 +5299,7 @@ void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, 
         if (in == NULL) continue;
         if (in->pinned() && !in->is_CFG())
           set_ctrl(in, in->in(0));
-        int is_visited = visited.test_set( in->_idx );
+        int is_visited = visited.test_set_bit( in->_idx );
         if (!has_node(in)) {  // No controlling input yet?
           assert( !in->is_CFG(), "CFG Node with no controlling input?" );
           assert( !is_visited, "visit only once" );
@@ -5687,11 +5688,11 @@ void PhaseIdealLoop::init_dom_lca_tags() {
 //------------------------------build_loop_late--------------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_late( BitMap &visited, Node_List &worklist, Node_Stack &nstack ) {
   while (worklist.size() != 0) {
     Node *n = worklist.pop();
     // Only visit once
-    if (visited.test_set(n->_idx)) continue;
+    if (visited.test_set_bit(n->_idx)) continue;
     uint cnt = n->outcnt();
     uint   i = 0;
     while (true) {
@@ -5708,9 +5709,9 @@ void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, N
           // pass as we do in the regular pass.  Instead, visit such phis as
           // simple uses of the loop head.
           if( use->in(0) && (use->is_CFG() || use->is_Phi()) ) {
-            if( !visited.test(use->_idx) )
+            if( !visited.at(use->_idx) )
               worklist.push(use);
-          } else if( !visited.test_set(use->_idx) ) {
+          } else if( !visited.test_set_bit(use->_idx) ) {
             nstack.push(n, i); // Save parent and next use's index.
             n   = use;         // Process all children of current use.
             cnt = use->outcnt();
@@ -6118,8 +6119,8 @@ void PhaseIdealLoop::dump() const {
   ResourceMark rm;
   Node_Stack stack(C->live_nodes() >> 2);
   Node_List rpo_list;
-  VectorSet visited;
-  visited.set(C->top()->_idx);
+  ResourceBitMap visited;
+  visited.set_bit(C->top()->_idx);
   rpo(C->root(), stack, visited, rpo_list);
   // Dump root loop indexed by last element in PO order
   dump(_ltree_root, rpo_list.size(), rpo_list);
@@ -6218,9 +6219,9 @@ void PhaseIdealLoop::dump_idoms_in_reverse(const Node* n, const Node_List& idom_
 
 // Collect a R-P-O for the whole CFG.
 // Result list is in post-order (scan backwards for RPO)
-void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, VectorSet &visited, Node_List &rpo_list) const {
+void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, BitMap &visited, Node_List &rpo_list) const {
   stk.push(start, 0);
-  visited.set(start->_idx);
+  visited.set_bit(start->_idx);
 
   while (stk.is_nonempty()) {
     Node* m   = stk.node();
@@ -6228,7 +6229,7 @@ void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, VectorSet &visited, Node_
     if (idx < m->outcnt()) {
       stk.set_index(idx + 1);
       Node* n = m->raw_out(idx);
-      if (n->is_CFG() && !visited.test_set(n->_idx)) {
+      if (n->is_CFG() && !visited.test_set_bit(n->_idx)) {
         stk.push(n, 0);
       }
     } else {

@@ -346,7 +346,7 @@ void IdealGraphPrinter::set_traverse_outs(bool b) {
   _traverse_outs = b;
 }
 
-void IdealGraphPrinter::visit_node(Node *n, bool edges, VectorSet* temp_set) {
+void IdealGraphPrinter::visit_node(Node *n, bool edges, BitMap* temp_set) {
 
   if (edges) {
 
@@ -727,8 +727,8 @@ Node* IdealGraphPrinter::get_load_node(const Node* node) {
   return load;
 }
 
-void IdealGraphPrinter::walk_nodes(Node* start, bool edges, VectorSet* temp_set) {
-  VectorSet visited;
+void IdealGraphPrinter::walk_nodes(Node* start, bool edges, BitMap* temp_set) {
+  ResourceBitMap visited;
   GrowableArray<Node *> nodeStack(Thread::current()->resource_area(), 0, 0, nullptr);
   nodeStack.push(start);
   if (C->cfg() != nullptr) {
@@ -744,7 +744,7 @@ void IdealGraphPrinter::walk_nodes(Node* start, bool edges, VectorSet* temp_set)
 
   while (nodeStack.length() > 0) {
     Node* n = nodeStack.pop();
-    if (visited.test_set(n->_idx)) {
+    if (visited.test_set_bit(n->_idx)) {
       continue;
     }
 
@@ -782,7 +782,7 @@ void IdealGraphPrinter::print(const char *name, Node *node) {
   print_attr(GRAPH_NAME_PROPERTY, (const char *)name);
   end_head();
 
-  VectorSet temp_set;
+  ResourceBitMap temp_set;
 
   head(NODES_ELEMENT);
   if (C->cfg() != NULL) {

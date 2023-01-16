@@ -28,10 +28,10 @@
 #include "ci/ciMethodData.hpp"
 #include "ci/ciTypeFlow.hpp"
 #include "compiler/methodLiveness.hpp"
-#include "libadt/vectset.hpp"
 #include "oops/generateOopMap.hpp"
 #include "opto/graphKit.hpp"
 #include "opto/subnode.hpp"
+#include "utilities/bitMap.hpp"
 
 class BytecodeParseHistogram;
 class InlineTree;

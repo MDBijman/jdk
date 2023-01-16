@@ -23,7 +23,6 @@
  */
 
 #include "precompiled.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.inline.hpp"
 #include "opto/addnode.hpp"
@@ -33,6 +32,8 @@
 #include "opto/chaitin.hpp"
 #include "opto/loopnode.hpp"
 #include "opto/machnode.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 //------------------------------Split--------------------------------------
 // Walk the graph in RPO and for each lrg which spills, propagate reaching
@@ -551,7 +552,7 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
   Node ***Reaches     = NEW_SPLIT_ARRAY( Node**, _cfg.number_of_blocks() + 1);
   bool  **UP          = NEW_SPLIT_ARRAY( bool*, _cfg.number_of_blocks() + 1);
   Node  **debug_defs  = NEW_SPLIT_ARRAY( Node*, spill_cnt );
-  VectorSet **UP_entry= NEW_SPLIT_ARRAY( VectorSet*, spill_cnt );
+  BitMap **UP_entry   = NEW_SPLIT_ARRAY( BitMap*, spill_cnt );
 
   // Initialize Reaches & UP
   for (bidx = 0; bidx < _cfg.number_of_blocks() + 1; bidx++) {
@@ -567,9 +568,9 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
 
 #undef NEW_SPLIT_ARRAY
 
-  // Initialize to array of empty vectorsets
+  // Initialize to array of empty bitmaps
   for( slidx = 0; slidx < spill_cnt; slidx++ )
-    UP_entry[slidx] = new VectorSet(split_arena);
+    UP_entry[slidx] = new ArenaBitMap(split_arena);
 
   //----------PASS 1----------
   //----------Propagation & Node Insertion Code----------

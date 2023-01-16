@@ -23,7 +23,6 @@
  */
 
 #include "precompiled.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "compiler/compilerDirectives.hpp"
@@ -37,6 +36,8 @@
 #include "opto/rootnode.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/powerOfTwo.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 void Block_Array::grow( uint i ) {
   assert(i >= Max(), "must be an overflow");
@@ -407,7 +408,7 @@ PhaseCFG::PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher)
 // The RootNode both starts and ends it's own block.  Do this with a recursive
 // backwards walk over the control edges.
 uint PhaseCFG::build_cfg() {
-  VectorSet visited;
+  ResourceBitMap visited;
 
   // Allocate stack with enough space to avoid frequent realloc
   Node_Stack nstack(C->live_nodes() >> 1);
@@ -433,7 +434,7 @@ uint PhaseCFG::build_cfg() {
       np->set_req(idx, g);
       x = proj = g;
     }
-    if (!visited.test_set(x->_idx)) { // Visit this block once
+    if (!visited.test_set_bit(x->_idx)) { // Visit this block once
       // Skip any control-pinned middle'in stuff
       Node *p = proj;
       do {
@@ -562,8 +563,8 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
   // The exploration uses header indices as block identifiers, since
   // Block::_pre_order might not be unique in the context of this function.
   ResourceMark rm;
-  VectorSet descendants;
-  descendants.set(block->head()->_idx); // The goto block is a descendant of itself.
+  ResourceBitMap descendants;
+  descendants.set_bit(block->head()->_idx); // The goto block is a descendant of itself.
   Block_List worklist;
   worklist.push(out); // Start exploring from the successor block.
   while (worklist.size() > 0) {
@@ -572,15 +573,15 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
     // descendant. Even though all predecessors of b might not have been visited
     // yet, we know that all dominators of b have been already visited (since
     // they must appear in any path from the goto block to b).
-    descendants.set(b->head()->_idx);
+    descendants.set_bit(b->head()->_idx);
     b->_dom_depth++;
     for (uint i = 0; i < b->_num_succs; i++) {
       Block* s = b->_succs[i];
       if (s != get_root_block() &&
-          !descendants.test(s->head()->_idx) &&
+          !descendants.at(s->head()->_idx) &&
           // Do not search below non-descendant successors, since any block
           // reachable from them cannot be descendant either.
-          descendants.test(s->_idom->head()->_idx)) {
+          descendants.at(s->_idom->head()->_idx)) {
         worklist.push(s);
       }
     }
@@ -1253,12 +1254,12 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
 
 //------------------------------dump-------------------------------------------
 #ifndef PRODUCT
-void PhaseCFG::_dump_cfg( const Node *end, VectorSet &visited  ) const {
+void PhaseCFG::_dump_cfg( const Node *end, BitMap &visited  ) const {
   const Node *x = end->is_block_proj();
   assert( x, "not a CFG" );
 
   // Do not visit this block again
-  if( visited.test_set(x->_idx) ) return;
+  if( visited.test_set_bit(x->_idx) ) return;
 
   // Skip through this block
   const Node *p = x;
@@ -1284,7 +1285,7 @@ void PhaseCFG::dump( ) const {
       block->dump(this);
     }
   } else {                      // Else do it with a DFS
-    VectorSet visited(_block_arena);
+    ArenaBitMap visited(_block_arena);
     _dump_cfg(_root,visited);
   }
 }

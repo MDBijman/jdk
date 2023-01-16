@@ -27,7 +27,6 @@
 #include "compiler/compileLog.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/c2compiler.hpp"
@@ -40,6 +39,8 @@
 #include "opto/movenode.hpp"
 #include "opto/rootnode.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 ConnectionGraph::ConnectionGraph(Compile * C, PhaseIterGVN *igvn, int invocation) :
   _nodes(C->comp_arena(), C->unique(), C->unique(), NULL),
@@ -3186,7 +3187,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
   GrowableArray<PhiNode *>  orig_phis;
   PhaseIterGVN  *igvn = _igvn;
   uint new_index_start = (uint) _compile->num_alias_types();
-  VectorSet visited;
+  ResourceBitMap visited;
   ideal_nodes.clear(); // Reset for use with set_map/get_map.
   uint unique_old = _compile->unique();
 
@@ -3345,7 +3346,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
                n->is_EncodeP() ||
                n->is_DecodeN() ||
                (n->is_ConstraintCast() && n->Opcode() == Op_CastPP)) {
-      if (visited.test_set(n->_idx)) {
+      if (visited.test_set_bit(n->_idx)) {
         assert(n->is_Phi(), "loops only through Phi's");
         continue;  // already processed
       }
@@ -3499,7 +3500,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
     return;  // nothing to do
   while (memnode_worklist.length() != 0) {
     Node *n = memnode_worklist.pop();
-    if (visited.test_set(n->_idx)) {
+    if (visited.test_set_bit(n->_idx)) {
       continue;
     }
     if (n->is_Phi() || n->is_ClearArray()) {
@@ -3591,7 +3592,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
   uint length = mergemem_worklist.length();
   for( uint next = 0; next < length; ++next ) {
     MergeMemNode* nmm = mergemem_worklist.at(next);
-    assert(!visited.test_set(nmm->_idx), "should not be visited before");
+    assert(!visited.test_set_bit(nmm->_idx), "should not be visited before");
     // Note: we don't want to use MergeMemStream here because we only want to
     // scan inputs which exist at the start, not ones we add during processing.
     // Note 2: MergeMem may already contains instance memory slices added

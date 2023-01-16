@@ -25,7 +25,6 @@
 #ifndef SHARE_OPTO_MATCHER_HPP
 #define SHARE_OPTO_MATCHER_HPP
 
-#include "libadt/vectset.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/compressedOops.hpp"
 #include "opto/node.hpp"
@@ -33,6 +32,7 @@
 #include "opto/regmask.hpp"
 #include "opto/subnode.hpp"
 #include "runtime/vm_version.hpp"
+#include "utilities/bitMap.hpp"
 
 class Compile;
 class Node;
@@ -88,11 +88,11 @@ private:
   // Private arena of State objects
   ResourceArea _states_arena;
 
-  VectorSet   _visited;         // Visit bits
+  ArenaBitMap  _visited;         // Visit bits
 
   // Used to control the Label pass
-  VectorSet   _shared;          // Shared Ideal Node
-  VectorSet   _dontcare;        // Nothing the matcher cares about
+  ArenaBitMap  _shared;          // Shared Ideal Node
+  ArenaBitMap  _dontcare;        // Nothing the matcher cares about
 
   // Private methods which perform the actual matching and reduction
   // Walks the label tree, generating machine nodes
@@ -144,7 +144,7 @@ private:
 #ifndef PRODUCT
   Node_Array _old2new_map;    // Map roots of ideal-trees to machine-roots
   Node_Array _new2old_map;    // Maps machine nodes back to ideal
-  VectorSet _reused;          // Ideal IGV identifiers reused by machine nodes
+  ArenaBitMap _reused;          // Ideal IGV identifiers reused by machine nodes
 #endif // !PRODUCT
 
   // Accessors for the inherited field PhaseTransform::_nodes:
@@ -194,12 +194,12 @@ public:
 
   MachNode* mach_null() const { return _mach_null; }
 
-  bool    is_shared( Node *n ) { return _shared.test(n->_idx) != 0; }
-  void   set_shared( Node *n ) {  _shared.set(n->_idx); }
-  bool   is_visited( Node *n ) { return _visited.test(n->_idx) != 0; }
-  void  set_visited( Node *n ) { _visited.set(n->_idx); }
-  bool  is_dontcare( Node *n ) { return _dontcare.test(n->_idx) != 0; }
-  void set_dontcare( Node *n ) {  _dontcare.set(n->_idx); }
+  bool    is_shared( Node *n ) { return _shared.at(n->_idx) != 0; }
+  void   set_shared( Node *n ) {  _shared.set_bit(n->_idx); }
+  bool   is_visited( Node *n ) { return _visited.at(n->_idx) != 0; }
+  void  set_visited( Node *n ) { _visited.set_bit(n->_idx); }
+  bool  is_dontcare( Node *n ) { return _dontcare.at(n->_idx) != 0; }
+  void set_dontcare( Node *n ) {  _dontcare.set_bit(n->_idx); }
 
   // Mode bit to tell DFA and expand rules whether we are running after
   // (or during) register selection.  Usually, the matcher runs before,
@@ -454,9 +454,9 @@ public:
   // Should the Matcher clone shifts on addressing modes, expecting them to
   // be subsumed into complex addressing expressions or compute them into
   // registers?  True for Intel but false for most RISCs
-  bool pd_clone_address_expressions(AddPNode* m, MStack& mstack, VectorSet& address_visited);
+  bool pd_clone_address_expressions(AddPNode* m, MStack& mstack, BitMap& address_visited);
   // Clone base + offset address expression
-  bool clone_base_plus_offset_address(AddPNode* m, MStack& mstack, VectorSet& address_visited);
+  bool clone_base_plus_offset_address(AddPNode* m, MStack& mstack, BitMap& address_visited);
 
   // Generate implicit null check for narrow oops if it can fold
   // into address expression (x64).

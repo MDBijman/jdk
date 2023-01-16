@@ -164,17 +164,17 @@ void Matcher::verify_new_nodes_only(Node* xroot) {
   // Make sure that the new graph only references new nodes
   ResourceMark rm;
   Unique_Node_List worklist;
-  VectorSet visited;
+  ResourceBitMap visited;
   worklist.push(xroot);
   while (worklist.size() > 0) {
     Node* n = worklist.pop();
-    visited.set(n->_idx);
+    visited.set_bit(n->_idx);
     assert(C->node_arena()->contains(n), "dead node");
     for (uint j = 0; j < n->req(); j++) {
       Node* in = n->in(j);
       if (in != NULL) {
         assert(C->node_arena()->contains(in), "dead node");
-        if (!visited.test(in->_idx)) {
+        if (!visited.at(in->_idx)) {
           worklist.push(in);
         }
       }
@@ -2077,10 +2077,10 @@ bool Matcher::clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   return pd_clone_node(n, m, mstack);
 }
 
-bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
+bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, BitMap& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
-    address_visited.test_set(m->_idx); // Flag as address_visited
+    address_visited.test_set_bit(m->_idx); // Flag as address_visited
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     // Clone X+offset as it also folds into most addressing expressions
     mstack.push(off, Visit);
@@ -2100,14 +2100,14 @@ void Matcher::find_shared(Node* n) {
   // Allocate stack of size C->live_nodes() * 2 to avoid frequent realloc
   MStack mstack(C->live_nodes() * 2);
   // Mark nodes as address_visited if they are inputs to an address expression
-  VectorSet address_visited;
+  ResourceBitMap address_visited;
   mstack.push(n, Visit);     // Don't need to pre-visit root node
   while (mstack.is_nonempty()) {
     n = mstack.node();       // Leave node on stack
     Node_State nstate = mstack.state();
     uint nop = n->Opcode();
     if (nstate == Pre_Visit) {
-      if (address_visited.test(n->_idx)) { // Visited in address already?
+      if (address_visited.at(n->_idx)) { // Visited in address already?
         // Flag as visited and shared now.
         set_visited(n);
       }
@@ -2506,7 +2506,7 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
 #ifndef PRODUCT
 void Matcher::record_new2old(Node* newn, Node* old) {
   _new2old_map.map(newn->_idx, old);
-  if (!_reused.test_set(old->_igv_idx)) {
+  if (!_reused.test_set_bit(old->_igv_idx)) {
     // Reuse the Ideal-level IGV identifier so that the node can be tracked
     // across matching. If there are multiple machine nodes expanded from the
     // same Ideal node, only one will reuse its IGV identifier.

@@ -47,7 +47,7 @@ class PhaseStringOpts : public Phase {
   ciField* size_table_field;
 
   // A set for use by various stages
-  VectorSet _visited;
+  ResourceBitMap _visited;
 
   // Collect a list of all SB.toString calls
   Node_List collect_toString_calls();

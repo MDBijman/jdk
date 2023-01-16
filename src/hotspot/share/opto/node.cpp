@@ -2666,7 +2666,7 @@ void Node::dump_comp(const char* suffix, outputStream *st) const {
 
 // VERIFICATION CODE
 // Verify all nodes if verify_depth is negative
-void Node::verify(int verify_depth, VectorSet& visited, Node_List& worklist) {
+void Node::verify(int verify_depth, BitMap& visited, Node_List& worklist) {
   assert(verify_depth != 0, "depth should not be 0");
   Compile* C = Compile::current();
   uint last_index_on_current_depth = worklist.size() - 1;
@@ -2719,7 +2719,7 @@ void Node::verify(int verify_depth, VectorSet& visited, Node_List& worklist) {
       }
       assert(cnt == 0, "mismatched def-use edge counts");
 
-      if (add_to_worklist && !visited.test_set(x->_idx)) {
+      if (add_to_worklist && !visited.test_set_bit(x->_idx)) {
         worklist.push(x);
       }
     }
@@ -2949,11 +2949,11 @@ void Unique_Node_List::remove(Node* n) {
 
 //-----------------------remove_useless_nodes----------------------------------
 // Remove useless nodes from worklist
-void Unique_Node_List::remove_useless_nodes(VectorSet &useful) {
+void Unique_Node_List::remove_useless_nodes(BitMap &useful) {
   for (uint i = 0; i < size(); ++i) {
     Node *n = at(i);
     assert( n != NULL, "Did not expect null entries in worklist");
-    if (!useful.test(n->_idx)) {
+    if (!useful.at(n->_idx)) {
       _in_worklist.remove(n->_idx);
       map(i, Node_List::pop());
       --i;  // Visit popped node

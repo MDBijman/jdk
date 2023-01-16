@@ -507,7 +507,7 @@ Node* PhaseCFG::select(
   Block* block,
   Node_List &worklist,
   GrowableArray<int> &ready_cnt,
-  VectorSet &next_call,
+  BitMap &next_call,
   uint sched_slot,
   intptr_t* recalc_pressure_nodes) {
 
@@ -785,8 +785,8 @@ void PhaseCFG::adjust_register_pressure(Node* n, Block* block, intptr_t* recalc_
 }
 
 //------------------------------set_next_call----------------------------------
-void PhaseCFG::set_next_call(Block* block, Node* n, VectorSet& next_call) {
-  if( next_call.test_set(n->_idx) ) return;
+void PhaseCFG::set_next_call(Block* block, Node* n, BitMap& next_call) {
+  if( next_call.test_set_bit(n->_idx) ) return;
   for( uint i=0; i<n->len(); i++ ) {
     Node *m = n->in(i);
     if( !m ) continue;  // must see all nodes in block that precede call
@@ -802,7 +802,7 @@ void PhaseCFG::set_next_call(Block* block, Node* n, VectorSet& next_call) {
 // next subroutine call get priority - basically it moves things NOT needed
 // for the next call till after the call.  This prevents me from trying to
 // carry lots of stuff live across a call.
-void PhaseCFG::needed_for_next_call(Block* block, Node* this_call, VectorSet& next_call) {
+void PhaseCFG::needed_for_next_call(Block* block, Node* this_call, BitMap& next_call) {
   // Find the next control-defining Node in this block
   Node* call = NULL;
   for (DUIterator_Fast imax, i = this_call->fast_outs(imax); i < imax; i++) {
@@ -837,7 +837,7 @@ static void add_call_kills(MachProjNode *proj, RegMask& regs, const char* save_p
 
 
 //------------------------------sched_call-------------------------------------
-uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, GrowableArray<int>& ready_cnt, MachCallNode* mcall, VectorSet& next_call) {
+uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, GrowableArray<int>& ready_cnt, MachCallNode* mcall, BitMap& next_call) {
   RegMask regs;
 
   // Schedule all the users of the call right now.  All the users are
@@ -933,7 +933,7 @@ uint PhaseCFG::sched_call(Block* block, uint node_cnt, Node_List& worklist, Grow
 
 //------------------------------schedule_local---------------------------------
 // Topological sort within a block.  Someday become a real scheduler.
-bool PhaseCFG::schedule_local(Block* block, GrowableArray<int>& ready_cnt, VectorSet& next_call, intptr_t *recalc_pressure_nodes) {
+bool PhaseCFG::schedule_local(Block* block, GrowableArray<int>& ready_cnt, BitMap& next_call, intptr_t *recalc_pressure_nodes) {
   // Already "sorted" are the block start Node (as the first entry), and
   // the block-ending Node and any trailing control projections.  We leave
   // these alone.  PhiNodes and ParmNodes are made to follow the block start

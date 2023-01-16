@@ -23,7 +23,6 @@
 
 #include "precompiled.hpp"
 #include "compiler/compileLog.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
@@ -40,6 +39,7 @@
 #include "opto/vectornode.hpp"
 #include "opto/movenode.hpp"
 #include "utilities/powerOfTwo.hpp"
+#include "utilities/bitMap.hpp"
 
 //
 //                  S U P E R W O R D   T R A N S F O R M
@@ -2475,8 +2475,8 @@ Node* SuperWord::find_last_mem_state(Node_List* pk, Node* first_mem, bool &is_de
 void SuperWord::print_loop(bool whole) {
   Node_Stack stack(_arena, _phase->C->unique() >> 2);
   Node_List rpo_list;
-  VectorSet visited(_arena);
-  visited.set(lpt()->_head->_idx);
+  ArenaBitMap visited(_arena);
+  visited.set_bit(lpt()->_head->_idx);
   _phase->rpo(lpt()->_head, stack, visited, rpo_list);
   _phase->dump(lpt(), rpo_list.size(), rpo_list );
   if(whole) {

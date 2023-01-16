@@ -772,9 +772,9 @@ void PhaseChaitin::gather_lrg_masks( bool after_aggressive ) {
         // Check for twice prior spilling.  Once prior spilling might have
         // spilled 'soft', 2nd prior spill should have spilled 'hard' and
         // further spilling is unlikely to make progress.
-        if (_spilled_once.test(n->_idx)) {
+        if (_spilled_once.at(n->_idx)) {
           lrg._was_spilled1 = 1;
-          if (_spilled_twice.test(n->_idx)) {
+          if (_spilled_twice.at(n->_idx)) {
             lrg._was_spilled2 = 1;
           }
         }
@@ -1245,7 +1245,7 @@ void PhaseChaitin::Simplify( ) {
         // Check for just becoming of-low-degree just counting registers.
         // _must_spill live ranges are already on the low degree list.
         if (n->just_lo_degree() && !n->_must_spill) {
-          assert(!_ifg->_yanked->test(neighbor), "Cannot move to lo degree twice");
+          assert(!_ifg->_yanked->at(neighbor), "Cannot move to lo degree twice");
           // Pull from hi-degree list
           uint prev = n->_prev;
           uint next = n->_next;
@@ -1274,7 +1274,7 @@ void PhaseChaitin::Simplify( ) {
     // Find cheapest guy
     debug_only( int lo_no_simplify=0; );
     for (uint i = _hi_degree; i; i = lrgs(i)._next) {
-      assert(!_ifg->_yanked->test(i), "");
+      assert(!_ifg->_yanked->at(i), "");
       // It's just vaguely possible to move hi-degree to lo-degree without
       // going through a just-lo-degree stage: If you remove a double from
       // a float live range it's degree will drop by 2 and you can skip the
@@ -1427,7 +1427,7 @@ OptoReg::Name PhaseChaitin::bias_color( LRG &lrg, int chunk ) {
   uint copy_lrg = _lrg_map.find(lrg._copy_bias);
   if (copy_lrg != 0) {
     // If he has a color,
-    if(!_ifg->_yanked->test(copy_lrg)) {
+    if(!_ifg->_yanked->at(copy_lrg)) {
       OptoReg::Name reg = lrgs(copy_lrg).reg();
       //  And it is legal for you,
       if (is_legal_reg(lrg, reg, chunk))
@@ -1669,8 +1669,8 @@ uint PhaseChaitin::Select( ) {
 
 // Set the 'spilled_once' or 'spilled_twice' flag on a node.
 void PhaseChaitin::set_was_spilled( Node *n ) {
-  if( _spilled_once.test_set(n->_idx) )
-    _spilled_twice.set(n->_idx);
+  if( _spilled_once.test_set_bit(n->_idx) )
+    _spilled_twice.set_bit(n->_idx);
 }
 
 // Convert Ideal spill instructions into proper FramePtr + offset Loads and
@@ -2079,9 +2079,9 @@ void PhaseChaitin::dump(const Node* n) const {
   }
   if( n->is_Mach() ) n->as_Mach()->dump_spec(tty);
   else n->dump_spec(tty);
-  if( _spilled_once.test(n->_idx ) ) {
+  if( _spilled_once.at(n->_idx ) ) {
     tty->print(" Spill_1");
-    if( _spilled_twice.test(n->_idx ) )
+    if( _spilled_twice.at(n->_idx ) )
       tty->print(" Spill_2");
   }
   tty->print("\n");

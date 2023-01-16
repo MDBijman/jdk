@@ -25,10 +25,11 @@
 #ifndef SHARE_OPTO_NODE_HPP
 #define SHARE_OPTO_NODE_HPP
 
-#include "libadt/vectset.hpp"
 #include "opto/compile.hpp"
 #include "opto/type.hpp"
 #include "utilities/copy.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 // Portions of code courtesy of Clifford Click
 
@@ -172,7 +173,7 @@ class StoreVectorNode;
 class StoreVectorScatterNode;
 class VectorMaskCmpNode;
 class VectorUnboxNode;
-class VectorSet;
+class BitMap;
 class VectorReinterpretNode;
 class ShiftVNode;
 class ExpandVNode;
@@ -1218,7 +1219,7 @@ public:
   // Print compact per-node info
   virtual void dump_compact_spec(outputStream *st) const { dump_spec(st); }
 
-  static void verify(int verify_depth, VectorSet& visited, Node_List& worklist);
+  static void verify(int verify_depth, BitMap& visited, Node_List& worklist);
 
   // This call defines a class-unique string used to identify class instances
   virtual const char *Name() const;
@@ -1581,18 +1582,18 @@ public:
 //------------------------------Unique_Node_List-------------------------------
 class Unique_Node_List : public Node_List {
   friend class VMStructs;
-  VectorSet _in_worklist;
+  ArenaBitMap _in_worklist;
   uint _clock_index;            // Index in list where to pop from next
 public:
-  Unique_Node_List() : Node_List(), _clock_index(0) {}
-  Unique_Node_List(Arena *a) : Node_List(a), _in_worklist(a), _clock_index(0) {}
+  Unique_Node_List() : Node_List(), _in_worklist(Thread::current()->resource_area()) /* FIXME 8297090 check me */, _clock_index(0) {}
+  Unique_Node_List(Arena *a) : Node_List(a), _in_worklist(a, 1000), _clock_index(0) {}
 
   void remove( Node *n );
-  bool member( Node *n ) { return _in_worklist.test(n->_idx) != 0; }
-  VectorSet& member_set(){ return _in_worklist; }
+  bool member( Node *n ) { return _in_worklist.at(n->_idx) != 0; }
+  BitMap& member_set(){ return _in_worklist; }
 
   void push(Node* b) {
-    if( !_in_worklist.test_set(b->_idx) )
+    if( !_in_worklist.test_set_bit(b->_idx) )
       Node_List::push(b);
   }
   Node *pop() {
@@ -1600,17 +1601,17 @@ public:
     Node *b = at(_clock_index);
     map( _clock_index, Node_List::pop());
     if (size() != 0) _clock_index++; // Always start from 0
-    _in_worklist.remove(b->_idx);
+    _in_worklist.clear_bit(b->_idx);
     return b;
   }
   Node *remove(uint i) {
     Node *b = Node_List::at(i);
-    _in_worklist.remove(b->_idx);
+    _in_worklist.clear_bit(b->_idx);
     map(i,Node_List::pop());
     return b;
   }
   void yank(Node *n) {
-    _in_worklist.remove(n->_idx);
+    _in_worklist.clear_bit(n->_idx);
     Node_List::yank(n);
   }
   void  clear() {
@@ -1620,7 +1621,7 @@ public:
   }
 
   // Used after parsing to remove useless nodes before Iterative GVN
-  void remove_useless_nodes(VectorSet& useful);
+  void remove_useless_nodes(BitMap& useful);
 
   bool contains(const Node* n) const {
     fatal("use faster member() instead");

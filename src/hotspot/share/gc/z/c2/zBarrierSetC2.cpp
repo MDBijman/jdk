@@ -459,12 +459,12 @@ void ZBarrierSetC2::analyze_dominating_barriers() const {
         // Dominating block? Look around for safepoints
         ResourceMark rm;
         Block_List stack;
-        VectorSet visited;
+        ResourceBitMap visited;
         stack.push(load_block);
         bool safepoint_found = block_has_safepoint(load_block);
         while (!safepoint_found && stack.size() > 0) {
           Block* block = stack.pop();
-          if (visited.test_set(block->_pre_order)) {
+          if (visited.test_set_bit(block->_pre_order)) {
             continue;
           }
           if (block_has_safepoint(block)) {

@@ -311,7 +311,7 @@ void  NodeHash::clear() {
 //-----------------------remove_useless_nodes----------------------------------
 // Remove useless nodes from value table,
 // implementation does not depend on hash function
-void NodeHash::remove_useless_nodes(VectorSet &useful) {
+void NodeHash::remove_useless_nodes(BitMap &useful) {
 
   // Dead nodes in the hash table inherited from GVN should not replace
   // existing nodes, remove dead nodes.
@@ -319,7 +319,7 @@ void NodeHash::remove_useless_nodes(VectorSet &useful) {
   Node *sentinel_node = sentinel();
   for( uint i = 0; i < max; ++i ) {
     Node *n = at(i);
-    if(n != NULL && n != sentinel_node && !useful.test(n->_idx)) {
+    if(n != NULL && n != sentinel_node && !useful.at(n->_idx)) {
       debug_only(n->exit_hash_lock()); // Unlock the node when removed
       _table[i] = sentinel_node;       // Replace with placeholder
     }
@@ -668,15 +668,15 @@ void PhaseTransform::dump_types( ) const {
 
 //------------------------------dump_nodes_and_types---------------------------
 void PhaseTransform::dump_nodes_and_types(const Node* root, uint depth, bool only_ctrl) {
-  VectorSet visited;
+  ResourceBitMap visited;
   dump_nodes_and_types_recur(root, depth, only_ctrl, visited);
 }
 
 //------------------------------dump_nodes_and_types_recur---------------------
-void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, VectorSet &visited) {
+void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, BitMap &visited) {
   if( !n ) return;
   if( depth == 0 ) return;
-  if( visited.test_set(n->_idx) ) return;
+  if( visited.test_set_bit(n->_idx) ) return;
   for( uint i=0; i<n->len(); i++ ) {
     if( only_ctrl && !(n->is_Region()) && i != TypeFunc::Control ) continue;
     dump_nodes_and_types_recur( n->in(i), depth-1, only_ctrl, visited );
@@ -1020,7 +1020,7 @@ void PhaseIterGVN::shuffle_worklist() {
 void PhaseIterGVN::verify_step(Node* n) {
   if (VerifyIterativeGVN) {
     ResourceMark rm;
-    VectorSet visited;
+    ResourceBitMap visited;
     Node_List worklist;
 
     _verify_window[_verify_counter % _verify_window_size] = n;
@@ -1042,7 +1042,7 @@ void PhaseIterGVN::verify_step(Node* n) {
         continue;
       }
       // Typical fanout is 1-2, so this call visits about 6 nodes.
-      if (!visited.test_set(n->_idx)) {
+      if (!visited.test_set_bit(n->_idx)) {
         worklist.push(n);
       }
     }

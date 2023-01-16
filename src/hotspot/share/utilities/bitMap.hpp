@@ -199,6 +199,9 @@ class BitMap {
   inline void set_bit(idx_t bit);
   inline void clear_bit(idx_t bit);
 
+  // Tests bit before setting
+  inline bool test_set_bit(idx_t index);
+
   // Attempts to change a bit to a desired value. The operation returns true if
   // this thread changed the value of the bit. It was changed with a RMW operation
   // using the specified memory_order. The operation returns false if the change

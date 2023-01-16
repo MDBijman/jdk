@@ -153,7 +153,7 @@ bool ShenandoahBarrierC2Support::has_safepoint_between(Node* start, Node* stop, 
 }
 
 #ifdef ASSERT
-bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, VectorSet& visited, verify_type t, bool trace, Unique_Node_List& barriers_used) {
+bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used) {
   assert(phis.size() == 0, "");
 
   while (true) {
@@ -220,7 +220,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, Vecto
           tty->print("Found Java call");
         }
       } else if (in->is_Phi()) {
-        if (!visited.test_set(in->_idx)) {
+        if (!visited.test_set_bit(in->_idx)) {
           if (trace) {tty->print("Pushed phi:"); in->dump();}
           phis.push(in, 2);
           in = in->in(1);
@@ -228,7 +228,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, Vecto
         }
         if (trace) {tty->print("Already seen phi:"); in->dump();}
       } else if (in->Opcode() == Op_CMoveP || in->Opcode() == Op_CMoveN) {
-        if (!visited.test_set(in->_idx)) {
+        if (!visited.test_set_bit(in->_idx)) {
           if (trace) {tty->print("Pushed cmovep:"); in->dump();}
           phis.push(in, CMoveNode::IfTrue);
           in = in->in(CMoveNode::IfFalse);
@@ -280,7 +280,7 @@ void ShenandoahBarrierC2Support::verify(RootNode* root) {
   GrowableArray<Node*> barriers;
   Unique_Node_List barriers_used;
   Node_Stack phis(0);
-  VectorSet visited;
+  ResourceBitMap visited;
   const bool trace = false;
   const bool verify_no_useless_barrier = false;
 
@@ -365,7 +365,7 @@ void ShenandoahBarrierC2Support::verify(RootNode* root) {
             (!verify_helper(in1, phis, visited, ShenandoahValue, trace, barriers_used) ||
              !verify_helper(in2, phis, visited, ShenandoahValue, trace, barriers_used))) {
           phis.clear();
-          visited.reset();
+          visited.reinitialize(0);
         }
       }
     } else if (n->is_LoadStore()) {
@@ -620,7 +620,7 @@ void ShenandoahBarrierC2Support::verify(RootNode* root) {
         for (uint i = sfpt->jvms()->scloff(); i < sfpt->jvms()->endoff(); i++) {
           if (!verify_helper(sfpt->in(i), phis, visited, ShenandoahLoad, trace, barriers_used)) {
             phis.clear();
-            visited.reset();
+            visited.reinitialize(0);
           }
         }
       }
@@ -770,12 +770,12 @@ Node* ShenandoahBarrierC2Support::no_branches(Node* c, Node* dom, bool allow_one
 
 Node* ShenandoahBarrierC2Support::dom_mem(Node* mem, Node* ctrl, int alias, Node*& mem_ctrl, PhaseIdealLoop* phase) {
   ResourceMark rm;
-  VectorSet wq;
-  wq.set(mem->_idx);
+  ResourceBitMap wq;
+  wq.set_bit(mem->_idx);
   mem_ctrl = phase->ctrl_or_self(mem);
   while (!phase->is_dominator(mem_ctrl, ctrl) || mem_ctrl == ctrl) {
     mem = next_mem(mem, alias);
-    if (wq.test_set(mem->_idx)) {
+    if (wq.test_set_bit(mem->_idx)) {
       return NULL;
     }
     mem_ctrl = phase->ctrl_or_self(mem);
@@ -1207,7 +1207,7 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
       call->extract_projections(&projs, false, false);
 
 #ifdef ASSERT
-      VectorSet cloned;
+      ResourceBitMap cloned;
 #endif
       Node* lrb_clone = lrb->clone();
       phase->register_new_node(lrb_clone, projs.catchall_catchproj);
@@ -1237,7 +1237,7 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
             stack.set_index(idx+1);
             assert(!u->is_CFG(), "");
             stack.push(u, 0);
-            assert(!cloned.test_set(u->_idx), "only one clone");
+            assert(!cloned.test_set_bit(u->_idx), "only one clone");
             Node* u_clone = u->clone();
             int nb = u_clone->replace_edge(n, n_clone, &phase->igvn());
             assert(nb > 0, "should have replaced some uses");
@@ -1384,7 +1384,7 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
 
     Node* addr;
     if (ShenandoahSelfFixing) {
-      VectorSet visited;
+      ResourceBitMap visited;
       addr = get_load_addr(phase, visited, lrb);
     } else {
       addr = phase->igvn().zerocon(T_OBJECT);
@@ -1594,8 +1594,8 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
 
 }
 
-Node* ShenandoahBarrierC2Support::get_load_addr(PhaseIdealLoop* phase, VectorSet& visited, Node* in) {
-  if (visited.test_set(in->_idx)) {
+Node* ShenandoahBarrierC2Support::get_load_addr(PhaseIdealLoop* phase, BitMap& visited, Node* in) {
+  if (visited.test_set_bit(in->_idx)) {
     return NULL;
   }
   switch (in->Opcode()) {
@@ -1811,7 +1811,7 @@ IfNode* ShenandoahBarrierC2Support::find_unswitching_candidate(const IdealLoopTr
 }
 
 
-void ShenandoahBarrierC2Support::optimize_after_expansion(VectorSet &visited, Node_Stack &stack, Node_List &old_new, PhaseIdealLoop* phase) {
+void ShenandoahBarrierC2Support::optimize_after_expansion(BitMap &visited, Node_Stack &stack, Node_List &old_new, PhaseIdealLoop* phase) {
   Node_List heap_stable_tests;
   stack.push(phase->C->start(), 0);
   do {
@@ -1821,7 +1821,7 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(VectorSet &visited, No
     if (i < n->outcnt()) {
       Node* u = n->raw_out(i);
       stack.set_index(i+1);
-      if (!visited.test_set(u->_idx)) {
+      if (!visited.test_set_bit(u->_idx)) {
         stack.push(u, 0);
       }
     } else {
@@ -1839,7 +1839,7 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(VectorSet &visited, No
   }
 
   if (!phase->C->major_progress()) {
-    VectorSet seen;
+    ResourceBitMap seen;
     for (uint i = 0; i < heap_stable_tests.size(); i++) {
       Node* n = heap_stable_tests.at(i);
       IdealLoopTree* loop = phase->get_loop(n);
@@ -1849,7 +1849,7 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(VectorSet &visited, No
         Node* head = loop->_head;
         if (head->is_Loop() &&
             (!head->is_CountedLoop() || head->as_CountedLoop()->is_main_loop() || head->as_CountedLoop()->is_normal_loop()) &&
-            !seen.test_set(head->_idx)) {
+            !seen.test_set_bit(head->_idx)) {
           IfNode* iff = find_unswitching_candidate(loop, phase);
           if (iff != NULL) {
             Node* bol = iff->in(1);
@@ -2012,7 +2012,7 @@ static bool has_never_branch(Node* root) {
 
 void MemoryGraphFixer::collect_memory_nodes() {
   Node_Stack stack(0);
-  VectorSet visited;
+  ResourceBitMap visited;
   Node_List regions;
 
   // Walk the raw memory graph and create a mapping from CFG node to
@@ -2068,7 +2068,7 @@ void MemoryGraphFixer::collect_memory_nodes() {
         continue;
       }
       for (;;) {
-        if (visited.test_set(mem->_idx) || mem->is_Start()) {
+        if (visited.test_set_bit(mem->_idx) || mem->is_Start()) {
           break;
         }
         if (mem->is_Phi()) {
@@ -2107,7 +2107,7 @@ void MemoryGraphFixer::collect_memory_nodes() {
   // Iterate over CFG nodes in rpo and propagate memory state to
   // compute memory state at regions, creating new phis if needed.
   Node_List rpo_list;
-  visited.clear();
+  visited.reinitialize(0);
   _phase->rpo(_phase->C->root(), stack, visited, rpo_list);
   Node* root = rpo_list.pop();
   assert(root == _phase->C->root(), "");

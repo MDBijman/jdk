@@ -26,10 +26,10 @@
 #define SHARE_OPTO_IDEALGRAPHPRINTER_HPP
 
 #include "libadt/dict.hpp"
-#include "libadt/vectset.hpp"
 #include "utilities/growableArray.hpp"
 #include "utilities/ostream.hpp"
 #include "utilities/xmlstream.hpp"
+#include "utilities/bitMap.hpp"
 
 #ifndef PRODUCT
 
@@ -98,12 +98,12 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
 
   void print_method(ciMethod *method, int bci, InlineTree *tree);
   void print_inline_tree(InlineTree *tree);
-  void visit_node(Node *n, bool edges, VectorSet* temp_set);
+  void visit_node(Node *n, bool edges, BitMap* temp_set);
   void print_field(const Node* node);
   ciField* get_field(const Node* node);
   ciField* find_source_field_of_array_access(const Node* node, uint& depth);
   static Node* get_load_node(const Node* node);
-  void walk_nodes(Node *start, bool edges, VectorSet* temp_set);
+  void walk_nodes(Node *start, bool edges, BitMap* temp_set);
   void begin_elem(const char *s);
   void end_elem();
   void begin_head(const char *s);

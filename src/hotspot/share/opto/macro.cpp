@@ -26,7 +26,6 @@
 #include "compiler/compileLog.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "gc/shared/tlab_globals.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/universe.hpp"
 #include "opto/addnode.hpp"
 #include "opto/arraycopynode.hpp"
@@ -55,6 +54,7 @@
 #include "runtime/sharedRuntime.hpp"
 #include "utilities/macros.hpp"
 #include "utilities/powerOfTwo.hpp"
+#include "utilities/bitMap.hpp"
 #if INCLUDE_G1GC
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
@@ -457,12 +457,12 @@ Node *PhaseMacroExpand::value_from_mem(Node *sfpt_mem, Node *sfpt_ctl, BasicType
   Node *start_mem = C->start()->proj_out_or_null(TypeFunc::Memory);
   Node *alloc_ctrl = alloc->in(TypeFunc::Control);
   Node *alloc_mem = alloc->in(TypeFunc::Memory);
-  VectorSet visited;
+  ResourceBitMap visited;
 
   bool done = sfpt_mem == alloc_mem;
   Node *mem = sfpt_mem;
   while (!done) {
-    if (visited.test_set(mem->_idx)) {
+    if (visited.test_set_bit(mem->_idx)) {
       return NULL;  // found a loop, give up
     }
     mem = scan_mem_chain(mem, alias_idx, offset, start_mem, alloc, &_igvn);

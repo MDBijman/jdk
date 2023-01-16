@@ -25,15 +25,15 @@
 #ifndef SHARE_OPTO_LIVE_HPP
 #define SHARE_OPTO_LIVE_HPP
 
-#include "libadt/vectset.hpp"
 #include "opto/block.hpp"
 #include "opto/indexSet.hpp"
 #include "opto/phase.hpp"
 #include "opto/regmask.hpp"
+#include "utilities/bitMap.hpp"
 
 class Block;
 class PhaseCFG;
-class VectorSet;
+class BitMap;
 class IndexSet;
 
 //------------------------------LRG_List---------------------------------------
@@ -68,8 +68,8 @@ class PhaseLive : public Phase {
   IndexSet *getset( Block *p );
   IndexSet *getfreeset( );
   void freeset( Block *p );
-  void add_liveout( Block *p, uint r, VectorSet &first_pass );
-  void add_liveout( Block *p, IndexSet *lo, VectorSet &first_pass );
+  void add_liveout( Block *p, uint r, BitMap &first_pass );
+  void add_liveout( Block *p, IndexSet *lo, BitMap &first_pass );
   void add_livein( Block *p, IndexSet *lo );
 
 public:

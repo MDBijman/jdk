@@ -33,7 +33,6 @@
 #include "compiler/compileBroker.hpp"
 #include "compiler/compilerEvent.hpp"
 #include "libadt/dict.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/methodData.hpp"
 #include "opto/idealGraphPrinter.hpp"
@@ -45,6 +44,7 @@
 #include "runtime/timerTrace.hpp"
 #include "runtime/vmThread.hpp"
 #include "utilities/ticks.hpp"
+#include "utilities/bitMap.hpp"
 
 class AbstractLockNode;
 class AddPNode;
@@ -366,8 +366,8 @@ class Compile : public Phase {
 
   // Node management
   uint                  _unique;                // Counter for unique Node indices
-  VectorSet             _dead_node_list;        // Set of dead nodes
-  uint                  _dead_node_count;       // Number of dead nodes; VectorSet::Size() is O(N).
+  ArenaBitMap           _dead_node_list;        // Set of dead nodes
+  uint                  _dead_node_count;       // Number of dead nodes; BitMap::count_one_bits() is O(N).
                                                 // So use this to keep count and make the call O(1).
   DEBUG_ONLY(Unique_Node_List* _modified_nodes;)   // List of nodes which inputs were modified
   DEBUG_ONLY(bool       _phase_optimize_finished;) // Used for live node verification while creating new nodes
@@ -795,10 +795,10 @@ class Compile : public Phase {
                                                   _recent_alloc_ctl = ctl;
                                                   _recent_alloc_obj = obj;
                                            }
-  void         record_dead_node(uint idx)  { if (_dead_node_list.test_set(idx)) return;
+  void         record_dead_node(uint idx)  { if (_dead_node_list.test_set_bit(idx)) return;
                                              _dead_node_count++;
                                            }
-  void         reset_dead_node_list()      { _dead_node_list.reset();
+  void         reset_dead_node_list()      { _dead_node_list.reinitialize(0);
                                              _dead_node_count = 0;
                                            }
   uint          live_nodes() const         {
@@ -1131,7 +1131,7 @@ class Compile : public Phase {
   // Logic cone optimization.
   void optimize_logic_cones(PhaseIterGVN &igvn);
   void collect_logic_cone_roots(Unique_Node_List& list);
-  void process_logic_cone_root(PhaseIterGVN &igvn, Node* n, VectorSet& visited);
+  void process_logic_cone_root(PhaseIterGVN &igvn, Node* n, BitMap& visited);
   bool compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_Node_List& inputs);
   uint compute_truth_table(Unique_Node_List& partition, Unique_Node_List& inputs);
   uint eval_macro_logic_op(uint func, uint op1, uint op2, uint op3);

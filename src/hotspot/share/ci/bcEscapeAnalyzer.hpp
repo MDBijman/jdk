@@ -30,8 +30,8 @@
 #include "ci/ciMethod.hpp"
 #include "ci/ciMethodData.hpp"
 #include "code/dependencies.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
+#include "utilities/bitMap.hpp"
 #include "utilities/growableArray.hpp"
 #endif
 
@@ -51,9 +51,9 @@ class BCEscapeAnalyzer : public ArenaObj {
   ciMethod*         _method;
   ciMethodData*     _methodData;
   int               _arg_size;
-  VectorSet         _arg_local;
-  VectorSet         _arg_stack;
-  VectorSet         _arg_returned;
+  ArenaBitMap       _arg_local;
+  ArenaBitMap       _arg_stack;
+  ArenaBitMap       _arg_returned;
   enum{ ARG_OFFSET_MAX = 31};
   uint              *_arg_modified;
 
@@ -80,7 +80,7 @@ class BCEscapeAnalyzer : public ArenaObj {
   bool is_argument(ArgumentMap vars);
   bool is_arg_stack(ArgumentMap vars);
   bool returns_all(ArgumentMap vars);
-  void clear_bits(ArgumentMap vars, VectorSet &bs);
+  void clear_bits(ArgumentMap vars, BitMap &bs);
   void set_method_escape(ArgumentMap vars);
   void set_global_escape(ArgumentMap vars, bool merge = false);
   void set_modified(ArgumentMap vars, int offs, int size);
@@ -119,18 +119,18 @@ class BCEscapeAnalyzer : public ArenaObj {
 
   // The given argument does not escape the callee.
   bool is_arg_local(int i) const {
-    return !_conservative && _arg_local.test(i);
+    return !_conservative && _arg_local.at(i);
   }
 
   // The given argument escapes the callee, but does not become globally
   // reachable.
   bool is_arg_stack(int i) const {
-    return !_conservative && _arg_stack.test(i);
+    return !_conservative && _arg_stack.at(i);
   }
 
   // The given argument does not escape globally, and may be returned.
   bool is_arg_returned(int i) const {
-    return !_conservative && _arg_returned.test(i); }
+    return !_conservative && _arg_returned.at(i); }
 
   // True iff only input arguments are returned.
   bool is_return_local() const {

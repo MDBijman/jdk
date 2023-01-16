@@ -23,13 +23,13 @@
  */
 
 #include "precompiled.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/block.hpp"
 #include "opto/machnode.hpp"
 #include "opto/phaseX.hpp"
 #include "opto/rootnode.hpp"
+#include "utilities/bitMap.hpp"
 
 // Portions of code courtesy of Clifford Click
 
@@ -371,7 +371,7 @@ struct NTarjan {
   // Setup 'vertex' as DFS to vertex mapping.
   // Setup 'semi' as vertex to DFS mapping.
   // Set 'parent' to DFS parent.
-  static int DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uint *dfsorder );
+  static int DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *dfsorder );
   void setdepth( uint size, uint *dom_depth );
 
   // Fast union-find work
@@ -404,7 +404,7 @@ void PhaseIdealLoop::Dominators() {
 
   // Tarjan's algorithm, almost verbatim:
   // Step 1:
-  VectorSet visited;
+  ResourceBitMap visited;
   int dfsnum = NTarjan::DFS( ntarjan, visited, this, dfsorder);
 
   // Tarjan is using 1-based arrays, so these are some initialize flags
@@ -506,7 +506,7 @@ void PhaseIdealLoop::Dominators() {
 
 // Perform DFS search.  Setup 'vertex' as DFS to vertex mapping.  Setup
 // 'semi' as vertex to DFS mapping.  Set 'parent' to DFS parent.
-int NTarjan::DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uint *dfsorder) {
+int NTarjan::DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *dfsorder) {
   // Allocate stack of size C->live_nodes()/8 to avoid frequent realloc
   GrowableArray <Node *> dfstack(pil->C->live_nodes() >> 3);
   Node *b = pil->C->root();
@@ -516,7 +516,7 @@ int NTarjan::DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uin
 
   while (dfstack.is_nonempty()) {
     b = dfstack.pop();
-    if( !visited.test_set(b->_idx) ) { // Test node and flag it as visited
+    if( !visited.test_set_bit(b->_idx) ) { // Test node and flag it as visited
       NTarjan *w = &ntarjan[dfsnum];
       // Only fully process control nodes
       w->_control = b;                 // Save actual node
@@ -534,7 +534,7 @@ int NTarjan::DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uin
       for ( int i = b->outcnt(); i-- > 0; ) { // Put on stack backwards
         Node* s = b->raw_out(i);       // Get a use
         // CFG nodes only and not dead stuff
-        if( s->is_CFG() && pil->has_node(s) && !visited.test(s->_idx) ) {
+        if( s->is_CFG() && pil->has_node(s) && !visited.at(s->_idx) ) {
           dfsorder[s->_idx] = dfsnum;  // Cache parent's dfsnum for a later use
           dfstack.push(s);
         }

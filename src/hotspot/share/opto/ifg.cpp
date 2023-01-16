@@ -44,7 +44,7 @@ PhaseIFG::PhaseIFG( Arena *arena ) : Phase(Interference_Graph), _arena(arena) {
 
 void PhaseIFG::init( uint maxlrg ) {
   _maxlrg = maxlrg;
-  _yanked = new (_arena) VectorSet(_arena);
+  _yanked = new (_arena) ArenaBitMap(_arena);
   _is_square = false;
   // Make uninitialized adjacency lists
   _adjs = (IndexSet*)_arena->Amalloc(sizeof(IndexSet)*maxlrg);

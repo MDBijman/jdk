@@ -23,7 +23,6 @@
  */
 
 #include "precompiled.hpp"
-#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/block.hpp"
@@ -37,6 +36,8 @@
 #include "opto/runtime.hpp"
 #include "opto/chaitin.hpp"
 #include "runtime/deoptimization.hpp"
+#include "utilities/bitMap.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 // Portions of code courtesy of Clifford Click
 
@@ -189,13 +190,13 @@ bool PhaseCFG::is_dominating_control(Node* dom_ctrl, Node* n) {
 
 //------------------------------schedule_pinned_nodes--------------------------
 // Set the basic block for Nodes pinned into blocks
-void PhaseCFG::schedule_pinned_nodes(VectorSet &visited) {
+void PhaseCFG::schedule_pinned_nodes(BitMap &visited) {
   // Allocate node stack of size C->live_nodes()+8 to avoid frequent realloc
   GrowableArray <Node*> spstack(C->live_nodes() + 8);
   spstack.push(_root);
   while (spstack.is_nonempty()) {
     Node* node = spstack.pop();
-    if (!visited.test_set(node->_idx)) { // Test node and flag it as visited
+    if (!visited.test_set_bit(node->_idx)) { // Test node and flag it as visited
       if (node->pinned() && !has_block(node)) {  // Pinned?  Nail it down!
         assert(node->in(0), "pinned Node must have Control");
         // Before setting block replace block_proj control edge
@@ -305,12 +306,12 @@ static Block* find_deepest_input(Node* n, const PhaseCFG* cfg) {
 // Find the earliest Block any instruction can be placed in.  Some instructions
 // are pinned into Blocks.  Unpinned instructions can appear in last block in
 // which all their inputs occur.
-bool PhaseCFG::schedule_early(VectorSet &visited, Node_Stack &roots) {
+bool PhaseCFG::schedule_early(BitMap &visited, Node_Stack &roots) {
   // Allocate stack with enough space to avoid frequent realloc
   Node_Stack nstack(roots.size() + 8);
   // _root will be processed among C->top() inputs
   roots.push(C->top(), 0);
-  visited.set(C->top()->_idx);
+  visited.set_bit(C->top()->_idx);
 
   while (roots.size() != 0) {
     // Use local variables nstack_top_n & nstack_top_i to cache values
@@ -349,7 +350,7 @@ bool PhaseCFG::schedule_early(VectorSet &visited, Node_Stack &roots) {
           continue;
         }
 
-        int is_visited = visited.test_set(in->_idx);
+        int is_visited = visited.test_set_bit(in->_idx);
         if (!has_block(in)) {
           if (is_visited) {
             assert(false, "graph should be schedulable");
@@ -862,19 +863,19 @@ private:
 
 public:
   // Constructor for the iterator
-  Node_Backward_Iterator(Node *root, VectorSet &visited, Node_Stack &stack, PhaseCFG &cfg);
+  Node_Backward_Iterator(Node *root, BitMap &visited, Node_Stack &stack, PhaseCFG &cfg);
 
   // Postincrement operator to iterate over the nodes
   Node *next();
 
 private:
-  VectorSet   &_visited;
+  BitMap   &_visited;
   Node_Stack  &_stack;
   PhaseCFG &_cfg;
 };
 
 // Constructor for the Node_Backward_Iterator
-Node_Backward_Iterator::Node_Backward_Iterator( Node *root, VectorSet &visited, Node_Stack &stack, PhaseCFG &cfg)
+Node_Backward_Iterator::Node_Backward_Iterator( Node *root, BitMap &visited, Node_Stack &stack, PhaseCFG &cfg)
   : _visited(visited), _stack(stack), _cfg(cfg) {
   // The stack should contain exactly the root
   stack.clear();
@@ -968,7 +969,7 @@ Node *Node_Backward_Iterator::next() {
 
 //------------------------------ComputeLatenciesBackwards----------------------
 // Compute the latency of all the instructions.
-void PhaseCFG::compute_latencies_backwards(VectorSet &visited, Node_Stack &stack) {
+void PhaseCFG::compute_latencies_backwards(BitMap &visited, Node_Stack &stack) {
 #ifndef PRODUCT
   if (trace_opto_pipelining())
     tty->print("\n#---- ComputeLatenciesBackwards ----\n");
@@ -1273,7 +1274,7 @@ Block* PhaseCFG::hoist_to_cheaper_block(Block* LCA, Block* early, Node* self) {
 // dominator tree of all USES of a value.  Pick the block with the least
 // loop nesting depth that is lowest in the dominator tree.
 extern const char must_clone[];
-void PhaseCFG::schedule_late(VectorSet &visited, Node_Stack &stack) {
+void PhaseCFG::schedule_late(BitMap &visited, Node_Stack &stack) {
 #ifndef PRODUCT
   if (trace_opto_pipelining())
     tty->print("\n#---- schedule_late ----\n");
@@ -1490,13 +1491,13 @@ void PhaseCFG::global_code_motion() {
   }
 
   // Set the basic block for Nodes pinned into blocks
-  VectorSet visited;
+  ResourceBitMap visited;
   schedule_pinned_nodes(visited);
 
   // Find the earliest Block any instruction can be placed in.  Some
   // instructions are pinned into Blocks.  Unpinned instructions can
   // appear in last block in which all their inputs occur.
-  visited.clear();
+  visited.reinitialize(0);
   Node_Stack stack((C->live_nodes() >> 2) + 16); // pre-grow
   if (!schedule_early(visited, stack)) {
     // Bailout without retry
@@ -1595,7 +1596,7 @@ void PhaseCFG::global_code_motion() {
   // Schedule locally.  Right now a simple topological sort.
   // Later, do a real latency aware scheduler.
   GrowableArray<int> ready_cnt(C->unique(), C->unique(), -1);
-  visited.reset();
+  visited.reinitialize(0);
   for (uint i = 0; i < number_of_blocks(); i++) {
     Block* block = get_block(i);
     if (!schedule_local(block, ready_cnt, visited, recalc_pressure_nodes)) {

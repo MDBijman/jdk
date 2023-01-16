@@ -255,7 +255,7 @@ public:
   Arena *_arena;
 
   // Keep track of inserted and deleted Nodes
-  VectorSet *_yanked;
+  BitMap *_yanked;
 
   PhaseIFG( Arena *arena );
   void init( uint maxlrg );
@@ -424,8 +424,8 @@ class PhaseChaitin : public PhaseRegAlloc {
 
   PhaseLive *_live;             // Liveness, used in the interference graph
   PhaseIFG *_ifg;               // Interference graph (for original chunk)
-  VectorSet _spilled_once;      // Nodes that have been spilled
-  VectorSet _spilled_twice;     // Nodes that have been spilled twice
+  ResourceBitMap _spilled_once;      // Nodes that have been spilled
+  ResourceBitMap _spilled_twice;     // Nodes that have been spilled twice
 
   // Combine the Live Range Indices for these 2 Nodes into a single live
   // range.  Future requests for any Node in either live range will

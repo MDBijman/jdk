@@ -373,12 +373,12 @@ Node_List PhaseStringOpts::collect_toString_calls() {
   Node_List string_calls;
   Node_List worklist;
 
-  _visited.clear();
+  _visited.reinitialize(0);
 
   // Prime the worklist
   for (uint i = 1; i < C->root()->len(); i++) {
     Node* n = C->root()->in(i);
-    if (n != NULL && !_visited.test_set(n->_idx)) {
+    if (n != NULL && !_visited.test_set_bit(n->_idx)) {
       worklist.push(n);
     }
   }
@@ -391,12 +391,12 @@ Node_List PhaseStringOpts::collect_toString_calls() {
       string_calls.push(csj);
       encountered++;
     }
-    if (ctrl->in(0) != NULL && !_visited.test_set(ctrl->in(0)->_idx)) {
+    if (ctrl->in(0) != NULL && !_visited.test_set_bit(ctrl->in(0)->_idx)) {
       worklist.push(ctrl->in(0));
     }
     if (ctrl->is_Region()) {
       for (uint i = 1; i < ctrl->len(); i++) {
-        if (ctrl->in(i) != NULL && !_visited.test_set(ctrl->in(i)->_idx)) {
+        if (ctrl->in(i) != NULL && !_visited.test_set_bit(ctrl->in(i)->_idx)) {
           worklist.push(ctrl->in(i));
         }
       }
@@ -1098,13 +1098,13 @@ bool StringConcat::validate_control_flow() {
   // Validate that all these results produced are contained within
   // this cluster of objects.  First collect all the results produced
   // by calls in the region.
-  _stringopts->_visited.clear();
+  _stringopts->_visited.reinitialize(0);
   Node_List worklist;
   Node* final_result = _end->proj_out_or_null(TypeFunc::Parms);
   for (uint i = 0; i < _control.size(); i++) {
     CallNode* cnode = _control.at(i)->isa_Call();
     if (cnode != NULL) {
-      _stringopts->_visited.test_set(cnode->_idx);
+      _stringopts->_visited.test_set_bit(cnode->_idx);
     }
     Node* result = cnode != NULL ? cnode->proj_out_or_null(TypeFunc::Parms) : NULL;
     if (result != NULL && result != final_result) {
@@ -1115,7 +1115,7 @@ bool StringConcat::validate_control_flow() {
   Node* last_result = NULL;
   while (worklist.size() > 0) {
     Node* result = worklist.pop();
-    if (_stringopts->_visited.test_set(result->_idx))
+    if (_stringopts->_visited.test_set_bit(result->_idx))
       continue;
     for (SimpleDUIterator i(result); i.has_next(); i.next()) {
       Node *use = i.get();

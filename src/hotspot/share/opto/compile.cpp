@@ -319,12 +319,12 @@ void Compile::identify_useful_nodes(Unique_Node_List &useful) {
 // list. Consider all non-useful nodes to be useless i.e., dead nodes.
 void Compile::update_dead_node_list(Unique_Node_List &useful) {
   uint max_idx = unique();
-  VectorSet& useful_node_set = useful.member_set();
+  BitMap& useful_node_set = useful.member_set();
 
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
     // mark it as dead in dead node list.
-    if (!useful_node_set.test(node_idx)) {
+    if (!useful_node_set.at(node_idx)) {
       record_dead_node(node_idx);
     }
   }
@@ -1168,11 +1168,11 @@ void Compile::print_missing_nodes() {
       _log->stamp();
       _log->end_head();
     }
-    VectorSet& useful_member_set = useful.member_set();
+    BitMap& useful_member_set = useful.member_set();
     int last_idx = l_nodes_by_walk;
     for (int i = 0; i < last_idx; i++) {
-      if (useful_member_set.test(i)) {
-        if (_dead_node_list.test(i)) {
+      if (useful_member_set.at(i)) {
+        if (_dead_node_list.at(i)) {
           if (_log != NULL) {
             _log->elem("mismatched_node_info node_idx='%d' type='both live and dead'", i);
           }
@@ -1183,7 +1183,7 @@ void Compile::print_missing_nodes() {
           }
         }
       }
-      else if (! _dead_node_list.test(i)) {
+      else if (! _dead_node_list.at(i)) {
         if (_log != NULL) {
           _log->elem("mismatched_node_info node_idx='%d' type='neither live nor dead'", i);
         }
@@ -1883,7 +1883,7 @@ void Compile::process_for_unstable_if_traps(PhaseIterGVN& igvn) {
     bool modified = trap->modified();
 
     if (next_bci != -1 && !modified) {
-      assert(!_dead_node_list.test(unc->_idx), "changing a dead node!");
+      assert(!_dead_node_list.at(unc->_idx), "changing a dead node!");
       JVMState* jvms = unc->jvms();
       ciMethod* method = jvms->method();
       ciBytecodeStream iter(method);
@@ -2810,15 +2810,15 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
          (inputs.size()    == 2 || inputs.size()    == 3);
 }
 
-void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, VectorSet &visited) {
+void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, BitMap &visited) {
   assert(is_vector_bitwise_op(n), "not a root");
 
-  visited.set(n->_idx);
+  visited.set_bit(n->_idx);
 
   // 1) Do a DFS walk over the logic cone.
   for (uint i = 1; i < n->req(); i++) {
     Node* in = n->in(i);
-    if (!visited.test(in->_idx) && is_vector_bitwise_op(in)) {
+    if (!visited.at(in->_idx) && is_vector_bitwise_op(in)) {
       process_logic_cone_root(igvn, in, visited);
     }
   }
@@ -2856,7 +2856,7 @@ void Compile::optimize_logic_cones(PhaseIterGVN &igvn) {
       const TypeVect* vt = n->bottom_type()->is_vect();
       bool supported = Matcher::match_rule_supported_vector(Op_MacroLogicV, vt->length(), vt->element_basic_type());
       if (supported) {
-        VectorSet visited(comp_arena());
+        ArenaBitMap visited(comp_arena());
         process_logic_cone_root(igvn, n, visited);
       }
     }
@@ -2872,8 +2872,8 @@ void Compile::Code_Gen() {
 
   // Perform instruction selection.  You might think we could reclaim Matcher
   // memory PDQ, but actually the Matcher is used in generating spill code.
-  // Internals of the Matcher (including some VectorSets) must remain live
-  // for awhile - thus I cannot reclaim Matcher memory lest a VectorSet usage
+  // Internals of the Matcher (including some BitMaps) must remain live
+  // for awhile - thus I cannot reclaim Matcher memory lest a BitMap usage
   // set a bit in reclaimed memory.
 
   // In debug mode can dump m._nodes.dump() for mapping of ideal to machine
@@ -2986,7 +2986,7 @@ struct Final_Reshape_Counts : public StackObj {
   int  _double_count;           // count double ops requiring more precision
   int  _java_call_count;        // count non-inlined 'java' calls
   int  _inner_loop_count;       // count loops which need alignment
-  VectorSet _visited;           // Visitation flags
+  BitMap _visited;              // Visitation flags
   Node_List _tests;             // Set of IfNodes & PCTableNodes
 
   Final_Reshape_Counts() :
@@ -3814,7 +3814,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
 void Compile::final_graph_reshaping_walk(Node_Stack& nstack, Node* root, Final_Reshape_Counts& frc, Unique_Node_List& dead_nodes) {
   Unique_Node_List sfpt;
 
-  frc._visited.set(root->_idx); // first, mark node as visited
+  frc._visited.set_bit(root->_idx); // first, mark node as visited
   uint cnt = root->req();
   Node *n = root;
   uint  i = 0;
@@ -3823,7 +3823,7 @@ void Compile::final_graph_reshaping_walk(Node_Stack& nstack, Node* root, Final_R
       // Place all non-visited non-null inputs onto stack
       Node* m = n->in(i);
       ++i;
-      if (m != NULL && !frc._visited.test_set(m->_idx)) {
+      if (m != NULL && !frc._visited.test_set_bit(m->_idx)) {
         if (m->is_SafePoint() && m->as_SafePoint()->jvms() != NULL) {
           // compute worst case interpreter size in case of a deoptimization
           update_interpreter_frame_size(m->as_SafePoint()->jvms()->interpreter_frame_size());
@@ -4003,7 +4003,7 @@ bool Compile::final_graph_reshaping() {
     // Check that I actually visited all kids.  Unreached kids
     // must be infinite loops.
     for (DUIterator_Fast jmax, j = n->fast_outs(jmax); j < jmax; j++)
-      if (!frc._visited.test(n->fast_out(j)->_idx)) {
+      if (!frc._visited.at(n->fast_out(j)->_idx)) {
         record_method_not_compilable("infinite loop");
         return true;            // Found unvisited kid; must be unreach
       }

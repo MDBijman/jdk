@@ -588,9 +588,9 @@ Node* PhaseIdealLoop::find_predicate(Node* entry) {
 // Helper class for loop_predication_impl to compute invariance on the fly and
 // clone invariants.
 class Invariance : public StackObj {
-  VectorSet _visited, _invariant;
+  ResourceBitMap _visited, _invariant;
   Node_Stack _stack;
-  VectorSet _clone_visited;
+  ResourceBitMap _clone_visited;
   Node_List _old_new; // map of old to new (clone)
   IdealLoopTree* _lpt;
   PhaseIdealLoop* _phase;
@@ -1214,7 +1214,7 @@ float PathFrequency::to(Node* n) {
 }
 
 void PhaseIdealLoop::loop_predication_follow_branches(Node *n, IdealLoopTree *loop, float loop_trip_cnt,
-                                                      PathFrequency& pf, Node_Stack& stack, VectorSet& seen,
+                                                      PathFrequency& pf, Node_Stack& stack, BitMap& seen,
                                                       Node_List& if_proj_list) {
   assert(n->is_Region(), "start from a region");
   Node* tail = loop->tail();
@@ -1227,7 +1227,7 @@ void PhaseIdealLoop::loop_predication_follow_branches(Node *n, IdealLoopTree *lo
     if (i < c->req()) {
       stack.set_index(i+1);
       Node* in = c->in(i);
-      while (!is_dominator(in, tail) && !seen.test_set(in->_idx)) {
+      while (!is_dominator(in, tail) && !seen.test_set_bit(in->_idx)) {
         IdealLoopTree* in_loop = get_loop(in);
         if (in_loop != loop) {
           in = in_loop->_head->in(LoopNode::EntryControl);
@@ -1580,7 +1580,7 @@ bool PhaseIdealLoop::loop_predication_impl(IdealLoopTree *loop) {
 
     // And look into all branches
     Node_Stack stack(0);
-    VectorSet seen;
+    ResourceBitMap seen;
     Node_List if_proj_list_freq(area);
     while (regions.size() > 0) {
       Node* c = regions.pop();
