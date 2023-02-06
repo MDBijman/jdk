@@ -386,7 +386,7 @@ bool RegionNode::is_unreachable_from_root(const PhaseGVN* phase) const {
         if (m == this) {
           return false; // We reached the Region node - it is not dead.
         }
-        if (!visited.test_set_bit(m->_idx))
+        if (!visited.test_set(m->_idx))
           nstack.push(m);
       }
     }
@@ -605,7 +605,7 @@ Node *RegionNode::Ideal(PhaseGVN *phase, bool can_reshape) {
         for (uint i = 0; i < n->req(); ++i) {
           Node* m = n->in(i);
           assert(m != (Node*)phase->C->root(), "Should be unreachable from root");
-          if (m != NULL && m->is_CFG() && !visited.test_set_bit(m->_idx)) {
+          if (m != NULL && m->is_CFG() && !visited.test_set(m->_idx)) {
             nstack.push(m);
           }
         }
@@ -1076,7 +1076,7 @@ PhiNode* PhiNode::split_out_instance(const TypePtr* at, PhaseIterGVN *igvn) cons
 //------------------------verify_adr_type--------------------------------------
 #ifdef ASSERT
 void PhiNode::verify_adr_type(BitMap& visited, const TypePtr* at) const {
-  if (visited.test_set_bit(_idx))  return;  //already visited
+  if (visited.test_set(_idx))  return;  //already visited
 
   // recheck constructor invariants:
   verify_adr_type(false);
@@ -1849,7 +1849,7 @@ bool PhiNode::is_unsafe_data_reference(Node *in) const {
         return true;    // Data loop
       }
       if (m != NULL && !m->is_dead_loop_safe()) { // Only look for unsafe cases.
-        if (!visited.test_set_bit(m->_idx))
+        if (!visited.test_set(m->_idx))
           nstack.push(m);
       }
     }
@@ -2431,7 +2431,7 @@ Node* PhiNode::clone_through_phi(Node* root_phi, const Type* t, uint c, PhaseIte
         continue; // ignore dead path
       } else if (def->is_Phi()) { // inner node
         Node* new_phi = node_map[n->_idx];
-        if (!visited.test_set_bit(def->_idx)) { // not visited yet
+        if (!visited.test_set(def->_idx)) { // not visited yet
           node_map.map(def->_idx, new PhiNode(def->in(0), t));
           stack.push(def, 1); // ignore control
         }
@@ -2471,7 +2471,7 @@ Node* PhiNode::merge_through_phi(Node* root_phi, PhaseIterGVN* igvn) {
       if (in == NULL) {
         continue; // ignore dead path
       } else if (in->isa_Phi()) {
-        if (!visited.test_set_bit(in->_idx)) {
+        if (!visited.test_set(in->_idx)) {
           stack.push(in, 1); // ignore control
         }
       } else if (in->Opcode() == Op_VectorBox) {

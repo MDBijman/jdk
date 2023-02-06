@@ -3427,7 +3427,7 @@ MemBarNode* MemBarNode::trailing_membar() const {
           break;
         }
       }
-      if (trailing != NULL && !seen.test_set_bit(trailing->_idx)) {
+      if (trailing != NULL && !seen.test_set(trailing->_idx)) {
         break;
       }
       while (multis.size() > 0) {
@@ -3454,7 +3454,7 @@ MemBarNode* MemBarNode::leading_membar() const {
   Node_Stack regions(0);
   Node* leading = in(0);
   while (leading != NULL && (!leading->is_MemBar() || !leading->as_MemBar()->leading())) {
-    while (leading == NULL || leading->is_top() || seen.test_set_bit(leading->_idx)) {
+    while (leading == NULL || leading->is_top() || seen.test_set(leading->_idx)) {
       leading = NULL;
       while (regions.size() > 0 && leading == NULL) {
         Node* r = regions.node();

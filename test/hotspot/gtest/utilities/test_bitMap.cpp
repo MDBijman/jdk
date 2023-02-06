@@ -114,45 +114,39 @@ class BitMapTest {
 #endif
 };
 
-// TestArenaBitMap is the shorthand combination of Arena and ArenaBitMap.
+// FixedArenaBitMap is the shorthand combination of Arena and ArenaBitMap.
 // Multiple inheritance guarantees to construct Arena first.
-class TestArenaBitMap : private Arena, public ArenaBitMap {
+class FixedArenaBitMap : private Arena, public ArenaBitMap {
  public:
-  TestArenaBitMap() : TestArenaBitMap(0) {}
-  TestArenaBitMap(idx_t size_in_bits, bool clear = true) : Arena(mtTest),
-                                                           ArenaBitMap(static_cast<Arena*>(this), size_in_bits, clear) {}
-};
-
-class TestCHeapBitMap : public CHeapBitMap {
-public:
-  TestCHeapBitMap(size_t size = 0) : CHeapBitMap(size, mtTest) {}
-
+  FixedArenaBitMap() : FixedArenaBitMap(0) {}
+  FixedArenaBitMap(idx_t size_in_bits, bool clear = true) : Arena(mtTest),
+                                                            ArenaBitMap(static_cast<Arena*>(this), size_in_bits, clear) {}
 };
 
 TEST_VM(BitMap, resize_grow) {
   BitMapTest::testResizeGrow<ResourceBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ResourceBitMap";
-  BitMapTest::testResizeGrow<TestCHeapBitMap>();
+  BitMapTest::testResizeGrow<CHeapBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type CHeapBitMap";
-  BitMapTest::testResizeGrow<TestArenaBitMap>();
+  BitMapTest::testResizeGrow<FixedArenaBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ArenaBitMap";
 }
 
 TEST_VM(BitMap, resize_shrink) {
   BitMapTest::testResizeShrink<ResourceBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ResourceBitMap";
-  BitMapTest::testResizeShrink<TestCHeapBitMap>();
+  BitMapTest::testResizeShrink<CHeapBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type CHeapBitMap";
-  BitMapTest::testResizeShrink<TestArenaBitMap>();
+  BitMapTest::testResizeShrink<FixedArenaBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ArenaBitMap";
 }
 
 TEST_VM(BitMap, resize_same) {
   BitMapTest::testResizeSame<ResourceBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ResourceBitMap";
-  BitMapTest::testResizeSame<TestCHeapBitMap>();
+  BitMapTest::testResizeSame<CHeapBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type CHeapBitMap";
-  BitMapTest::testResizeSame<TestArenaBitMap>();
+  BitMapTest::testResizeSame<FixedArenaBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ArenaBitMap";
 }
 
@@ -177,9 +171,9 @@ TEST_VM(BitMap, resize_grow_clear) {
 TEST_VM(BitMap, initialize) {
   BitMapTest::testInitialize<ResourceBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ResourceBitMap";
-  BitMapTest::testInitialize<TestCHeapBitMap>();
+  BitMapTest::testInitialize<CHeapBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type CHeapBitMap";
-  BitMapTest::testInitialize<TestArenaBitMap>();
+  BitMapTest::testInitialize<FixedArenaBitMap>();
   EXPECT_FALSE(HasFailure()) << "Failed on type ArenaBitMap";
 }
 
@@ -188,7 +182,7 @@ TEST_VM(BitMap, reinitialize) {
 
   for (auto size : sizes) {
     BitMapTest::testReinitialize<ResourceBitMap>(size);
-    BitMapTest::testReinitialize<TestArenaBitMap>(size);
+    BitMapTest::testReinitialize<FixedArenaBitMap>(size);
   }
 }
 
@@ -199,7 +193,7 @@ TEST_VM(BitMap, print_on) {
 
   for (auto size : sizes) {
     BitMapTest::testPrintOn<ResourceBitMap>(size);
-    BitMapTest::testPrintOn<TestArenaBitMap>(size);
+    BitMapTest::testPrintOn<FixedArenaBitMap>(size);
   }
 }
 

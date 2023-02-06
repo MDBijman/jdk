@@ -44,7 +44,7 @@ PhaseIFG::PhaseIFG( Arena *arena ) : Phase(Interference_Graph), _arena(arena) {
 
 void PhaseIFG::init( uint maxlrg ) {
   _maxlrg = maxlrg;
-  _yanked = new (_arena) ArenaBitMap(_arena);
+  _yanked = new (_arena) ArenaBitMap(_arena, 2);
   _is_square = false;
   // Make uninitialized adjacency lists
   _adjs = (IndexSet*)_arena->Amalloc(sizeof(IndexSet)*maxlrg);
@@ -133,7 +133,7 @@ void PhaseIFG::Union(uint a, uint b) {
 IndexSet *PhaseIFG::remove_node( uint a ) {
   assert( _is_square, "only on square" );
   assert( !_yanked->test(a), "" );
-  _yanked->set(a);
+  _yanked->set_bit(a);
 
   // I remove the LRG from all neighbors.
   LRG &lrg_a = lrgs(a);

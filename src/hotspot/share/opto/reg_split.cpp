@@ -569,8 +569,10 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
 #undef NEW_SPLIT_ARRAY
 
   // Initialize to array of empty bitmaps
-  for( slidx = 0; slidx < spill_cnt; slidx++ )
-    UP_entry[slidx] = new ArenaBitMap(split_arena);
+  for( slidx = 0; slidx < spill_cnt; slidx++ ) {
+	 UP_entry[slidx] = NEW_RESOURCE_OBJ(ArenaBitMap);
+     new (UP_entry[slidx]) ArenaBitMap(split_arena, 0);
+  }
 
   //----------PASS 1----------
   //----------Propagation & Node Insertion Code----------
@@ -756,7 +758,7 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
     for( insidx = 0; insidx < spill_cnt; insidx++ ) {
       debug_defs[insidx] = (UPblock[insidx]) ? NULL : Reachblock[insidx];
       if( UPblock[insidx] )     // Memoize UP decision at block start
-        UP_entry[insidx]->set( b->_pre_order );
+        UP_entry[insidx]->set_bit( b->_pre_order );
     }
 
     //----------Walk Instructions in the Block and Split----------

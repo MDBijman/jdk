@@ -196,7 +196,7 @@ void PhaseCFG::schedule_pinned_nodes(BitMap &visited) {
   spstack.push(_root);
   while (spstack.is_nonempty()) {
     Node* node = spstack.pop();
-    if (!visited.test_set_bit(node->_idx)) { // Test node and flag it as visited
+    if (!visited.test(node->_idx)) { // Test node and flag it as visited
       if (node->pinned() && !has_block(node)) {  // Pinned?  Nail it down!
         assert(node->in(0), "pinned Node must have Control");
         // Before setting block replace block_proj control edge
@@ -350,7 +350,7 @@ bool PhaseCFG::schedule_early(BitMap &visited, Node_Stack &roots) {
           continue;
         }
 
-        int is_visited = visited.test_set_bit(in->_idx);
+        int is_visited = visited.test(in->_idx);
         if (!has_block(in)) {
           if (is_visited) {
             assert(false, "graph should be schedulable");
@@ -905,7 +905,7 @@ Node *Node_Backward_Iterator::next() {
   // The key variable 'self' was set prior to jumping here.
   while( 1 ) {
 
-    _visited.set(self->_idx);
+    _visited.set_bit(self->_idx);
 
     // Now schedule all uses as late as possible.
     const Node* src = self->is_Proj() ? self->in(0) : self;

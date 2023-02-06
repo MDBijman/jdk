@@ -92,7 +92,7 @@ public:
     return _table[table_index];
   }
 
-  void   remove_useless_nodes(BitMap& useful); // replace with sentinel
+  void   remove_useless_nodes(const BitMap& useful); // replace with sentinel
   void   replace_with(NodeHash* nh);
   void   check_no_speculative_types(); // Check no speculative part for type nodes in table
 
@@ -381,7 +381,7 @@ public:
   Node*  hash_find(const Node* n) { return _table.hash_find(n); }
 
   // Used after parsing to eliminate values that are no longer in program
-  void   remove_useless_nodes(BitMap &useful) {
+  void   remove_useless_nodes(const BitMap& useful) {
     _table.remove_useless_nodes(useful);
     // this may invalidate cached cons so reset the cache
     init_con_caches();

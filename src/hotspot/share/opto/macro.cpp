@@ -462,7 +462,7 @@ Node *PhaseMacroExpand::value_from_mem(Node *sfpt_mem, Node *sfpt_ctl, BasicType
   bool done = sfpt_mem == alloc_mem;
   Node *mem = sfpt_mem;
   while (!done) {
-    if (visited.test_set_bit(mem->_idx)) {
+    if (visited.test_set(mem->_idx)) {
       return NULL;  // found a loop, give up
     }
     mem = scan_mem_chain(mem, alias_idx, offset, start_mem, alloc, &_igvn);

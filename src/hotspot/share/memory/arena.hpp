@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -93,6 +93,7 @@ protected:
   friend class VMStructs;
 
   MEMFLAGS    _flags;           // Memory tracking flags
+  bool _mark_managed = {false}; // Managed by external such as ResourceMark
 
   Chunk *_first;                // First chunk
   Chunk *_chunk;                // current chunk
@@ -171,6 +172,10 @@ protected:
   size_t size_in_bytes() const         {  return _size_in_bytes; };
   void set_size_in_bytes(size_t size);
 
+  static void free_malloced_objects(Chunk* chunk, char* hwm, char* max, char* hwm2)  PRODUCT_RETURN;
+  static void free_all(char** start, char** end)                                     PRODUCT_RETURN;
+
+  bool mark_managed() const { return _mark_managed; }
 private:
   // Reset this Arena to empty, access will trigger grow if necessary
   void   reset(void) {

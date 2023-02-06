@@ -1240,7 +1240,7 @@ Node *PhaseIdealLoop::clone_up_backedge_goo(Node *back_ctrl, Node *preheader_ctr
   if (get_ctrl(n) != back_ctrl) return n;
 
   // Only visit once
-  if (visited.test_set_bit(n->_idx)) {
+  if (visited.test(n->_idx)) {
     Node *x = clones.find(n->_idx);
     return (x != NULL) ? x : n;
   }

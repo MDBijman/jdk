@@ -754,7 +754,7 @@ bool ShenandoahBarrierSetC2::expand_barriers(Compile* C, PhaseIterGVN& igvn) con
   return !ShenandoahBarrierC2Support::expand(C, igvn);
 }
 
-bool ShenandoahBarrierSetC2::optimize_loops(PhaseIdealLoop* phase, LoopOptsMode mode, BitMap& visited, Node_Stack& nstack, Node_List& worklist) const {
+bool ShenandoahBarrierSetC2::optimize_loops(PhaseIdealLoop* phase, LoopOptsMode mode, GrowableBitMap& visited, Node_Stack& nstack, Node_List& worklist) const {
   if (mode == LoopOptsShenandoahExpand) {
     assert(UseShenandoahGC, "only for shenandoah");
     ShenandoahBarrierC2Support::pin_and_expand(phase);

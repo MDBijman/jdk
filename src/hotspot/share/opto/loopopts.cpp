@@ -1812,7 +1812,7 @@ void PhaseIdealLoop::split_if_with_blocks(BitMap &visited, Node_Stack &nstack) {
     if (i < cnt) {
       Node* use = n->raw_out(i);
       ++i;
-      if (use->outcnt() != 0 && !visited.test_set_bit(use->_idx)) {
+      if (use->outcnt() != 0 && !visited.test(use->_idx)) {
         // Now do pre-visit work for this use
         use = split_if_with_blocks_pre(use);
         nstack.push(n, i); // Save parent and next use's index.
@@ -2997,7 +2997,7 @@ void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, No
     if (idx < n->outcnt()) {
       Node* use = n->raw_out(idx);
       idx++;
-      if (!visited.test_set_bit(use->_idx)) {
+      if (!visited.test(use->_idx)) {
         if (member.at(use->_idx)) {
           nstack.push(n, idx);
           n = use;
@@ -3570,7 +3570,7 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
         Node* use = n->fast_out(j);
         if (use->is_CFG() &&
             loop->is_member(get_loop(use)) &&
-            !peel.test_set_bit(use->_idx)) {
+            !peel.test_set(use->_idx)) {
           worklist.push(use);
         }
       }

@@ -319,7 +319,7 @@ void Compile::identify_useful_nodes(Unique_Node_List &useful) {
 // list. Consider all non-useful nodes to be useless i.e., dead nodes.
 void Compile::update_dead_node_list(Unique_Node_List &useful) {
   uint max_idx = unique();
-  BitMap& useful_node_set = useful.member_set();
+  const BitMap& useful_node_set = useful.member_set();
 
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
@@ -624,7 +624,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _coarsened_locks   (comp_arena(), 8, 0, NULL),
                   _congraph(NULL),
                   NOT_PRODUCT(_igv_printer(NULL) COMMA)
-                  _dead_node_list(comp_arena()),
+                  _dead_node_list(comp_arena(), 2),
                   _dead_node_count(0),
                   _node_arena(mtCompiler),
                   _old_arena(mtCompiler),
@@ -901,7 +901,7 @@ Compile::Compile( ciEnv* ci_env,
     _failure_reason(NULL),
     _congraph(NULL),
     NOT_PRODUCT(_igv_printer(NULL) COMMA)
-    _dead_node_list(comp_arena()),
+    _dead_node_list(comp_arena(), 2),
     _dead_node_count(0),
     _node_arena(mtCompiler),
     _old_arena(mtCompiler),
@@ -944,7 +944,7 @@ Compile::Compile( ciEnv* ci_env,
     // The following is a dummy for the sake of GraphKit::gen_stub
     Unique_Node_List for_igvn(comp_arena());
     set_for_igvn(&for_igvn);  // not used, but some GraphKit guys push on this
-    PhaseGVN gvn(Thread::current()->resource_area(),255);
+    PhaseGVN gvn(Thread::current()->resource_area(), 255);
     set_initial_gvn(&gvn);    // not significant, but GraphKit guys use it pervasively
     gvn.transform_no_reclaim(top());
 
@@ -1168,7 +1168,7 @@ void Compile::print_missing_nodes() {
       _log->stamp();
       _log->end_head();
     }
-    BitMap& useful_member_set = useful.member_set();
+    const BitMap& useful_member_set = useful.member_set();
     int last_idx = l_nodes_by_walk;
     for (int i = 0; i < last_idx; i++) {
       if (useful_member_set.at(i)) {
@@ -2856,7 +2856,7 @@ void Compile::optimize_logic_cones(PhaseIterGVN &igvn) {
       const TypeVect* vt = n->bottom_type()->is_vect();
       bool supported = Matcher::match_rule_supported_vector(Op_MacroLogicV, vt->length(), vt->element_basic_type());
       if (supported) {
-        ArenaBitMap visited(comp_arena());
+        ArenaBitMap visited(comp_arena(), 2);
         process_logic_cone_root(igvn, n, visited);
       }
     }
@@ -2986,7 +2986,7 @@ struct Final_Reshape_Counts : public StackObj {
   int  _double_count;           // count double ops requiring more precision
   int  _java_call_count;        // count non-inlined 'java' calls
   int  _inner_loop_count;       // count loops which need alignment
-  BitMap _visited;              // Visitation flags
+  ResourceBitMap _visited;      // Visitation flags
   Node_List _tests;             // Set of IfNodes & PCTableNodes
 
   Final_Reshape_Counts() :
@@ -3823,7 +3823,7 @@ void Compile::final_graph_reshaping_walk(Node_Stack& nstack, Node* root, Final_R
       // Place all non-visited non-null inputs onto stack
       Node* m = n->in(i);
       ++i;
-      if (m != NULL && !frc._visited.test_set_bit(m->_idx)) {
+      if (m != NULL && !frc._visited.test_set(m->_idx)) {
         if (m->is_SafePoint() && m->as_SafePoint()->jvms() != NULL) {
           // compute worst case interpreter size in case of a deoptimization
           update_interpreter_frame_size(m->as_SafePoint()->jvms()->interpreter_frame_size());

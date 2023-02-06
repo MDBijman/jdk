@@ -72,6 +72,7 @@ public:
     char* _hwm;
     char* _max;
     size_t _size_in_bytes;
+    bool _mark_managed;
     DEBUG_ONLY(int _nesting;)
 
   public:
@@ -79,7 +80,8 @@ public:
       _chunk(area->_chunk),
       _hwm(area->_hwm),
       _max(area->_max),
-      _size_in_bytes(area->_size_in_bytes)
+      _size_in_bytes(area->_size_in_bytes),
+      _mark_managed(area->_mark_managed)
       DEBUG_ONLY(COMMA _nesting(area->_nesting))
     {}
   };
@@ -89,6 +91,7 @@ public:
     assert(_nesting == state._nesting, "precondition");
     assert(_nesting >= 0, "precondition");
     assert(_nesting < INT_MAX, "nesting overflow");
+    _mark_managed = true;
     DEBUG_ONLY(++_nesting;)
   }
 
@@ -96,6 +99,7 @@ public:
   void deactivate_state(const SavedState& state) {
     assert(_nesting > state._nesting, "deactivating inactive mark");
     assert((_nesting - state._nesting) == 1, "deactivating across another mark");
+    _mark_managed = state._mark_managed;
     DEBUG_ONLY(--_nesting;)
   }
 
@@ -104,6 +108,7 @@ public:
   void rollback_to(const SavedState& state) {
     assert(_nesting > state._nesting, "rollback to inactive mark");
     assert((_nesting - state._nesting) == 1, "rollback across another mark");
+    assert(_mark_managed, "managed by mark");
 
     if (state._chunk->next() != nullptr) { // Delete later chunks.
       // Reset size before deleting chunks.  Otherwise, the total

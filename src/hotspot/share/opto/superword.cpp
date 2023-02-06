@@ -63,8 +63,8 @@ SuperWord::SuperWord(PhaseIdealLoop* phase) :
   _align_to_ref(NULL),                    // memory reference to align vectors to
   _disjoint_ptrs(arena(), 8,  0, OrderedPair::initial), // runtime disambiguated pointer pairs
   _dg(_arena),                            // dependence graph
-  _visited(arena()),                      // visited node set
-  _post_visited(arena()),                 // post visited node set
+  _visited(arena(), 2),                   // visited node set
+  _post_visited(arena(), 2),              // post visited node set
   _n_idx_list(arena(), 8),                // scratch list of (node,index) pairs
   _nlist(arena(), 8, 0, NULL),            // scratch list of nodes
   _stk(arena(), 8, 0, NULL),              // scratch stack of nodes

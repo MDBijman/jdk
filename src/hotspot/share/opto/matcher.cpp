@@ -62,9 +62,9 @@ const uint Matcher::_end_rematerialize   = _END_REMATERIALIZE;
 Matcher::Matcher()
 : PhaseTransform( Phase::Ins_Select ),
   _states_arena(Chunk::medium_size, mtCompiler),
-  _visited(&_states_arena),
-  _shared(&_states_arena),
-  _dontcare(&_states_arena),
+  _visited(&_states_arena, 2),
+  _shared(&_states_arena, 2),
+  _dontcare(&_states_arena, 2),
   _reduceOp(reduceOp), _leftOp(leftOp), _rightOp(rightOp),
   _swallowed(swallowed),
   _begin_inst_chain_rule(_BEGIN_INST_CHAIN_RULE),
@@ -74,7 +74,7 @@ Matcher::Matcher()
 #ifndef PRODUCT
   _old2new_map(C->comp_arena()),
   _new2old_map(C->comp_arena()),
-  _reused(C->comp_arena()),
+  _reused(C->comp_arena(), 2),
 #endif // !PRODUCT
   _allocation_started(false),
   _ruleName(ruleName),
@@ -2080,7 +2080,7 @@ bool Matcher::clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
 bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, BitMap& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
-    address_visited.test_set_bit(m->_idx); // Flag as address_visited
+    address_visited.set_bit(m->_idx); // Flag as address_visited
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     // Clone X+offset as it also folds into most addressing expressions
     mstack.push(off, Visit);

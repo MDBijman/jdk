@@ -220,7 +220,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMa
           tty->print("Found Java call");
         }
       } else if (in->is_Phi()) {
-        if (!visited.test_set_bit(in->_idx)) {
+        if (!visited.test(in->_idx)) {
           if (trace) {tty->print("Pushed phi:"); in->dump();}
           phis.push(in, 2);
           in = in->in(1);
@@ -228,7 +228,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMa
         }
         if (trace) {tty->print("Already seen phi:"); in->dump();}
       } else if (in->Opcode() == Op_CMoveP || in->Opcode() == Op_CMoveN) {
-        if (!visited.test_set_bit(in->_idx)) {
+        if (!visited.test(in->_idx)) {
           if (trace) {tty->print("Pushed cmovep:"); in->dump();}
           phis.push(in, CMoveNode::IfTrue);
           in = in->in(CMoveNode::IfFalse);
@@ -775,7 +775,7 @@ Node* ShenandoahBarrierC2Support::dom_mem(Node* mem, Node* ctrl, int alias, Node
   mem_ctrl = phase->ctrl_or_self(mem);
   while (!phase->is_dominator(mem_ctrl, ctrl) || mem_ctrl == ctrl) {
     mem = next_mem(mem, alias);
-    if (wq.test_set_bit(mem->_idx)) {
+    if (wq.test_set(mem->_idx)) {
       return NULL;
     }
     mem_ctrl = phase->ctrl_or_self(mem);
@@ -1237,7 +1237,7 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
             stack.set_index(idx+1);
             assert(!u->is_CFG(), "");
             stack.push(u, 0);
-            assert(!cloned.test_set_bit(u->_idx), "only one clone");
+            assert(!cloned.test_set(u->_idx), "only one clone");
             Node* u_clone = u->clone();
             int nb = u_clone->replace_edge(n, n_clone, &phase->igvn());
             assert(nb > 0, "should have replaced some uses");
@@ -1595,7 +1595,7 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
 }
 
 Node* ShenandoahBarrierC2Support::get_load_addr(PhaseIdealLoop* phase, BitMap& visited, Node* in) {
-  if (visited.test_set_bit(in->_idx)) {
+  if (visited.test(in->_idx)) {
     return NULL;
   }
   switch (in->Opcode()) {
@@ -1821,7 +1821,8 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(BitMap &visited, Node_
     if (i < n->outcnt()) {
       Node* u = n->raw_out(i);
       stack.set_index(i+1);
-      if (!visited.test_set_bit(u->_idx)) {
+      if (!visited.test(u->_idx)) {
+				visited.set_bit(u->_idx);
         stack.push(u, 0);
       }
     } else {
@@ -1849,7 +1850,7 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(BitMap &visited, Node_
         Node* head = loop->_head;
         if (head->is_Loop() &&
             (!head->is_CountedLoop() || head->as_CountedLoop()->is_main_loop() || head->as_CountedLoop()->is_normal_loop()) &&
-            !seen.test_set_bit(head->_idx)) {
+            !seen.test_set(head->_idx)) {
           IfNode* iff = find_unswitching_candidate(loop, phase);
           if (iff != NULL) {
             Node* bol = iff->in(1);
@@ -2068,7 +2069,9 @@ void MemoryGraphFixer::collect_memory_nodes() {
         continue;
       }
       for (;;) {
-        if (visited.test_set_bit(mem->_idx) || mem->is_Start()) {
+				bool did_visit = visited.test(mem->_idx);
+				visited.set_bit(mem->_idx);
+        if (did_visit || mem->is_Start()) {
           break;
         }
         if (mem->is_Phi()) {

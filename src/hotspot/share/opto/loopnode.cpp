@@ -3528,7 +3528,7 @@ void IdealLoopTree::allpaths_check_safepts(BitMap &visited, Node_List &stack) {
       for (uint i = start; i < end; i++) {
         Node* in = n->in(i);
         assert(in->is_CFG(), "must be");
-        if (!visited.test_set_bit(in->_idx) && is_member(_phase->get_loop(in))) {
+        if (!visited.test(in->_idx) && is_member(_phase->get_loop(in))) {
           stack.push(in);
         }
       }
@@ -4668,7 +4668,7 @@ void PhaseIdealLoop::verify() const {
 // Make sure me and the given PhaseIdealLoop agree on key data structures
 void PhaseIdealLoop::verify_compare( Node *n, const PhaseIdealLoop *loop_verify, BitMap &visited ) const {
   if( !n ) return;
-  if( visited.test_set_bit( n->_idx ) ) return;
+  if( visited.test( n->_idx ) ) return;
   if( !_nodes[n->_idx] ) {      // Unreachable
     assert( !loop_verify->_nodes[n->_idx], "both should be unreachable" );
     return;
@@ -5279,7 +5279,7 @@ void PhaseIdealLoop::build_loop_early( BitMap &visited, Node_List &worklist, Nod
             }
             // Carry on with the recursion "as if" we are walking
             // only the control input
-            if( !visited.test_set_bit( in->_idx ) ) {
+            if( !visited.test( in->_idx ) ) {
               worklist.push(in);      // Visit this guy later, using worklist
             }
             // Get next node from nstack:
@@ -5299,7 +5299,7 @@ void PhaseIdealLoop::build_loop_early( BitMap &visited, Node_List &worklist, Nod
         if (in == NULL) continue;
         if (in->pinned() && !in->is_CFG())
           set_ctrl(in, in->in(0));
-        int is_visited = visited.test_set_bit( in->_idx );
+        int is_visited = visited.test( in->_idx );
         if (!has_node(in)) {  // No controlling input yet?
           assert( !in->is_CFG(), "CFG Node with no controlling input?" );
           assert( !is_visited, "visit only once" );
@@ -5692,7 +5692,7 @@ void PhaseIdealLoop::build_loop_late( BitMap &visited, Node_List &worklist, Node
   while (worklist.size() != 0) {
     Node *n = worklist.pop();
     // Only visit once
-    if (visited.test_set_bit(n->_idx)) continue;
+    if (visited.test(n->_idx)) continue;
     uint cnt = n->outcnt();
     uint   i = 0;
     while (true) {
@@ -5711,7 +5711,7 @@ void PhaseIdealLoop::build_loop_late( BitMap &visited, Node_List &worklist, Node
           if( use->in(0) && (use->is_CFG() || use->is_Phi()) ) {
             if( !visited.at(use->_idx) )
               worklist.push(use);
-          } else if( !visited.test_set_bit(use->_idx) ) {
+          } else if( !visited.test(use->_idx) ) {
             nstack.push(n, i); // Save parent and next use's index.
             n   = use;         // Process all children of current use.
             cnt = use->outcnt();
@@ -6229,7 +6229,7 @@ void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, BitMap &visited, Node_Lis
     if (idx < m->outcnt()) {
       stk.set_index(idx + 1);
       Node* n = m->raw_out(idx);
-      if (n->is_CFG() && !visited.test_set_bit(n->_idx)) {
+      if (n->is_CFG() && !visited.test(n->_idx)) {
         stk.push(n, 0);
       }
     } else {

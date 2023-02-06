@@ -44,7 +44,7 @@
 
 ConnectionGraph::ConnectionGraph(Compile * C, PhaseIterGVN *igvn, int invocation) :
   _nodes(C->comp_arena(), C->unique(), C->unique(), NULL),
-  _in_worklist(C->comp_arena()),
+  _in_worklist(C->comp_arena(), 2),
   _next_pidx(0),
   _collecting(true),
   _verify(false),
@@ -1602,7 +1602,7 @@ int ConnectionGraph::add_java_object_edges(JavaObjectNode* jobj, bool populate_w
     }
   }
   _worklist.clear();
-  _in_worklist.reset();
+  _in_worklist.clear();
   return new_edges;
 }
 
@@ -3346,7 +3346,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
                n->is_EncodeP() ||
                n->is_DecodeN() ||
                (n->is_ConstraintCast() && n->Opcode() == Op_CastPP)) {
-      if (visited.test_set_bit(n->_idx)) {
+      if (visited.test_set(n->_idx)) {
         assert(n->is_Phi(), "loops only through Phi's");
         continue;  // already processed
       }
@@ -3500,7 +3500,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
     return;  // nothing to do
   while (memnode_worklist.length() != 0) {
     Node *n = memnode_worklist.pop();
-    if (visited.test_set_bit(n->_idx)) {
+    if (visited.test_set(n->_idx)) {
       continue;
     }
     if (n->is_Phi() || n->is_ClearArray()) {
@@ -3592,7 +3592,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
   uint length = mergemem_worklist.length();
   for( uint next = 0; next < length; ++next ) {
     MergeMemNode* nmm = mergemem_worklist.at(next);
-    assert(!visited.test_set_bit(nmm->_idx), "should not be visited before");
+    assert(!visited.test_set(nmm->_idx), "should not be visited before");
     // Note: we don't want to use MergeMemStream here because we only want to
     // scan inputs which exist at the start, not ones we add during processing.
     // Note 2: MergeMem may already contains instance memory slices added

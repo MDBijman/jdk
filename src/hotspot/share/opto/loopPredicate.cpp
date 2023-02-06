@@ -588,9 +588,9 @@ Node* PhaseIdealLoop::find_predicate(Node* entry) {
 // Helper class for loop_predication_impl to compute invariance on the fly and
 // clone invariants.
 class Invariance : public StackObj {
-  ResourceBitMap _visited, _invariant;
+  ArenaBitMap _visited, _invariant;
   Node_Stack _stack;
-  ResourceBitMap _clone_visited;
+  ArenaBitMap _clone_visited;
   Node_List _old_new; // map of old to new (clone)
   IdealLoopTree* _lpt;
   PhaseIdealLoop* _phase;
@@ -601,7 +601,7 @@ class Invariance : public StackObj {
   // the possibility to push n onto the stack for further processing.
   void visit(Node* use, Node* n) {
     if (_lpt->is_invariant(n)) { // known invariant
-      _invariant.set(n->_idx);
+      _invariant.test_set(n->_idx);
     } else if (!n->is_CFG()) {
       Node *n_ctrl = _phase->ctrl_or_self(n);
       Node *u_ctrl = _phase->ctrl_or_self(use); // self if use is a CFG
@@ -638,7 +638,7 @@ class Invariance : public StackObj {
           // it depends only on that test. Otherwise, unless that test
           // is out of the loop, it's not invariant.
           if (n->is_CFG() || n->depends_only_on_test() || n->in(0) == NULL || !_phase->is_member(_lpt, n->in(0))) {
-            _invariant.set(n->_idx); // I am a invariant too
+            _invariant.set_bit(n->_idx); // I am a invariant too
           }
         }
       } else { // process next input
@@ -693,9 +693,9 @@ class Invariance : public StackObj {
 
  public:
   Invariance(Arena* area, IdealLoopTree* lpt) :
-    _visited(area), _invariant(area),
+    _visited(area, 2), _invariant(area, 2),
     _stack(area, 10 /* guess */),
-    _clone_visited(area), _old_new(area),
+    _clone_visited(area, 2), _old_new(area),
     _lpt(lpt), _phase(lpt->_phase),
     _data_dependency_on(NULL)
   {
@@ -720,7 +720,7 @@ class Invariance : public StackObj {
           if (!u->is_CFG()) {
             Node* c = _phase->get_ctrl(u);
             if (_lpt->is_member(_phase->get_loop(c)) || _phase->is_dominator(c, head)) {
-              _visited.set(u->_idx);
+              _visited.test_set(u->_idx);
               wq.push(u);
             }
           }
@@ -739,8 +739,8 @@ class Invariance : public StackObj {
   void map_ctrl(Node* old, Node* n) {
     assert(old->is_CFG() && n->is_CFG(), "must be");
     _old_new.map(old->_idx, n); // "clone" of old is n
-    _invariant.set(old->_idx);  // old is invariant
-    _clone_visited.set(old->_idx);
+    _invariant.test_set(old->_idx);  // old is invariant
+    _clone_visited.test_set(old->_idx);
   }
 
   // Driver function to compute invariance
@@ -1227,7 +1227,7 @@ void PhaseIdealLoop::loop_predication_follow_branches(Node *n, IdealLoopTree *lo
     if (i < c->req()) {
       stack.set_index(i+1);
       Node* in = c->in(i);
-      while (!is_dominator(in, tail) && !seen.test_set_bit(in->_idx)) {
+      while (!is_dominator(in, tail) && !seen.test(in->_idx)) {
         IdealLoopTree* in_loop = get_loop(in);
         if (in_loop != loop) {
           in = in_loop->_head->in(LoopNode::EntryControl);

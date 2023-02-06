@@ -448,17 +448,17 @@ class PhaseCFG : public Phase {
   // to late. Helper for schedule_late.
   Block* hoist_to_cheaper_block(Block* LCA, Block* early, Node* self);
 
-  bool schedule_local(Block* block, GrowableArray<int>& ready_cnt, BitMap& next_call, intptr_t* recacl_pressure_nodes);
-  void set_next_call(Block* block, Node* n, BitMap& next_call);
-  void needed_for_next_call(Block* block, Node* this_call, BitMap& next_call);
+  bool schedule_local(Block* block, GrowableArray<int>& ready_cnt, GrowableBitMap& next_call, intptr_t* recacl_pressure_nodes);
+  void set_next_call(Block* block, Node* n, GrowableBitMap& next_call);
+  void needed_for_next_call(Block* block, Node* this_call, GrowableBitMap& next_call);
 
   // Perform basic-block local scheduling
-  Node* select(Block* block, Node_List& worklist, GrowableArray<int>& ready_cnt, BitMap& next_call, uint sched_slot,
+  Node* select(Block* block, Node_List& worklist, GrowableArray<int>& ready_cnt, GrowableBitMap& next_call, uint sched_slot,
                intptr_t* recacl_pressure_nodes);
   void adjust_register_pressure(Node* n, Block* block, intptr_t *recalc_pressure_nodes, bool finalize_mode);
 
   // Schedule a call next in the block
-  uint sched_call(Block* block, uint node_cnt, Node_List& worklist, GrowableArray<int>& ready_cnt, MachCallNode* mcall, BitMap& next_call);
+  uint sched_call(Block* block, uint node_cnt, Node_List& worklist, GrowableArray<int>& ready_cnt, MachCallNode* mcall, GrowableBitMap& next_call);
 
   // Cleanup if any code lands between a Call and his Catch
   void call_catch_cleanup(Block* block);

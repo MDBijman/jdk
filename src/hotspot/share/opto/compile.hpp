@@ -795,7 +795,7 @@ class Compile : public Phase {
                                                   _recent_alloc_ctl = ctl;
                                                   _recent_alloc_obj = obj;
                                            }
-  void         record_dead_node(uint idx)  { if (_dead_node_list.test_set_bit(idx)) return;
+  void         record_dead_node(uint idx)  { if (_dead_node_list.test_set(idx)) return;
                                              _dead_node_count++;
                                            }
   void         reset_dead_node_list()      { _dead_node_list.reinitialize(0);

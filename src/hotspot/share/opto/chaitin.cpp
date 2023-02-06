@@ -675,7 +675,7 @@ void PhaseChaitin::Register_Allocate() {
           set_pair(i, hi, lo);
         }
       }
-      if( lrg._is_oop ) _node_oops.set(i);
+      if( lrg._is_oop ) _node_oops.set_bit(i);
     } else {
       set_bad(i);
     }
@@ -1669,7 +1669,7 @@ uint PhaseChaitin::Select( ) {
 
 // Set the 'spilled_once' or 'spilled_twice' flag on a node.
 void PhaseChaitin::set_was_spilled( Node *n ) {
-  if( _spilled_once.test_set_bit(n->_idx) )
+  if( _spilled_once.test_set(n->_idx) )
     _spilled_twice.set_bit(n->_idx);
 }
 

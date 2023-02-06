@@ -516,7 +516,7 @@ int NTarjan::DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *
 
   while (dfstack.is_nonempty()) {
     b = dfstack.pop();
-    if( !visited.test_set_bit(b->_idx) ) { // Test node and flag it as visited
+    if( !visited.test(b->_idx) ) { // Test node and flag it as visited
       NTarjan *w = &ntarjan[dfsnum];
       // Only fully process control nodes
       w->_control = b;                 // Save actual node

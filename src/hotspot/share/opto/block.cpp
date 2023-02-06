@@ -434,7 +434,7 @@ uint PhaseCFG::build_cfg() {
       np->set_req(idx, g);
       x = proj = g;
     }
-    if (!visited.test_set_bit(x->_idx)) { // Visit this block once
+    if (!visited.test_set(x->_idx)) { // Visit this block once
       // Skip any control-pinned middle'in stuff
       Node *p = proj;
       do {
@@ -1259,7 +1259,7 @@ void PhaseCFG::_dump_cfg( const Node *end, BitMap &visited  ) const {
   assert( x, "not a CFG" );
 
   // Do not visit this block again
-  if( visited.test_set_bit(x->_idx) ) return;
+  if( visited.test_set(x->_idx) ) return;
 
   // Skip through this block
   const Node *p = x;
