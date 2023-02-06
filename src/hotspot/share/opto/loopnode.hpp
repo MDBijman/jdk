@@ -679,11 +679,11 @@ public:
   // Given dominators, try to find loops with calls that must always be
   // executed (call dominates loop tail).  These loops do not need non-call
   // safepoints (ncsfpt).
-  void check_safepts(BitMap &visited, Node_List &stack);
+  void check_safepts(GrowableBitMap &visited, Node_List &stack);
 
   // Allpaths backwards scan from loop tail, terminating each path at first safepoint
   // encountered.
-  void allpaths_check_safepts(BitMap &visited, Node_List &stack);
+  void allpaths_check_safepts(GrowableBitMap &visited, Node_List &stack);
 
   // Remove safepoints from loop. Optionally keeping one.
   void remove_safepoints(PhaseIdealLoop* phase, bool keep_one);
@@ -1065,8 +1065,8 @@ private:
   IdealLoopTree *sort( IdealLoopTree *loop, IdealLoopTree *innermost );
 
   // Place Data nodes in some loop nest
-  void build_loop_early( BitMap &visited, Node_List &worklist, Node_Stack &nstack );
-  void build_loop_late ( BitMap &visited, Node_List &worklist, Node_Stack &nstack );
+  void build_loop_early( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack );
+  void build_loop_late ( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack );
   void build_loop_late_post_work(Node* n, bool pinned);
   void build_loop_late_post(Node* n);
   void verify_strip_mined_scheduling(Node *n, Node* least);
@@ -1285,7 +1285,7 @@ public:
   void insert_vector_post_loop(IdealLoopTree *loop, Node_List &old_new);
   // If Node n lives in the back_ctrl block, we clone a private version of n
   // in preheader_ctrl block and return that, otherwise return n.
-  Node *clone_up_backedge_goo( Node *back_ctrl, Node *preheader_ctrl, Node *n, BitMap &visited, Node_Stack &clones );
+  Node *clone_up_backedge_goo( Node *back_ctrl, Node *preheader_ctrl, Node *n, GrowableBitMap &visited, Node_Stack &clones );
 
   // Take steps to maximally unroll the loop.  Peel any odd iterations, then
   // unroll to do double iterations.  The next round of major loop transforms
@@ -1396,7 +1396,7 @@ public:
                                     Deoptimization::DeoptReason reason);
   bool loop_predication_should_follow_branches(IdealLoopTree *loop, ProjNode *predicate_proj, float& loop_trip_cnt);
   void loop_predication_follow_branches(Node *c, IdealLoopTree *loop, float loop_trip_cnt,
-                                        PathFrequency& pf, Node_Stack& stack, BitMap& seen,
+                                        PathFrequency& pf, Node_Stack& stack, GrowableBitMap& seen,
                                         Node_List& if_proj_list);
   ProjNode* insert_initial_skeleton_predicate(IfNode* iff, IdealLoopTree *loop,
                                               ProjNode* proj, ProjNode *predicate_proj,
@@ -1539,7 +1539,7 @@ public:
 
   // Check for aggressive application of 'split-if' optimization,
   // using basic block level info.
-  void  split_if_with_blocks     ( BitMap &visited, Node_Stack &nstack);
+  void  split_if_with_blocks     ( GrowableBitMap &visited, Node_Stack &nstack);
   Node *split_if_with_blocks_pre ( Node *n );
   void  split_if_with_blocks_post( Node *n );
   Node *has_local_phi_input( Node *n );
@@ -1701,7 +1701,7 @@ public:
   static volatile int _long_loop_counted_loops;
 #endif
 
-  void rpo(Node* start, Node_Stack &stk, BitMap &visited, Node_List &rpo_list) const;
+  void rpo(Node* start, Node_Stack &stk, GrowableBitMap &visited, Node_List &rpo_list) const;
 
   void check_counted_loop_shape(IdealLoopTree* loop, Node* x, BasicType bt) NOT_DEBUG_RETURN;
 

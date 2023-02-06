@@ -2315,12 +2315,12 @@ const uint Matcher::vector_ideal_reg(int size) {
 }
 
 // Check for shift by small constant as well
-static bool clone_shift(Node* shift, Matcher* matcher, Matcher::MStack& mstack, BitMap& address_visited) {
+static bool clone_shift(Node* shift, Matcher* matcher, Matcher::MStack& mstack, GrowableBitMap& address_visited) {
   if (shift->Opcode() == Op_LShiftX && shift->in(2)->is_Con() &&
       shift->in(2)->get_int() <= 3 &&
       // Are there other uses besides address expressions?
       !matcher->is_visited(shift)) {
-    address_visited.test(shift->_idx); // Flag as address_visited
+    address_visited.test_set(shift->_idx); // Flag as address_visited
     mstack.push(shift->in(2), Matcher::Visit);
     Node *conv = shift->in(1);
 #ifdef _LP64
@@ -2331,7 +2331,7 @@ static bool clone_shift(Node* shift, Matcher* matcher, Matcher::MStack& mstack, 
         conv->as_Type()->type()->is_long()->_lo >= 0 &&
         // Are there other uses besides address expressions?
         !matcher->is_visited(conv)) {
-      address_visited.test(conv->_idx); // Flag as address_visited
+      address_visited.test_set(conv->_idx); // Flag as address_visited
       mstack.push(conv->in(1), Matcher::Pre_Visit);
     } else
 #endif
@@ -2457,10 +2457,10 @@ bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
 // Should the Matcher clone shifts on addressing modes, expecting them
 // to be subsumed into complex addressing expressions or compute them
 // into registers?
-bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, BitMap& address_visited) {
+bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, GrowableBitMap& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
-    address_visited.test(m->_idx); // Flag as address_visited
+    address_visited.test_set(m->_idx); // Flag as address_visited
     Node *adr = m->in(AddPNode::Address);
 
     // Intel can handle 2 adds in addressing mode
@@ -2471,7 +2471,7 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
         LP64_ONLY( off->get_long() == (int) (off->get_long()) && ) // immL32
         // Are there other uses besides address expressions?
         !is_visited(adr)) {
-      address_visited.test(adr->_idx); // Flag as address_visited
+      address_visited.test_set(adr->_idx); // Flag as address_visited
       Node *shift = adr->in(AddPNode::Offset);
       if (!clone_shift(shift, this, mstack, address_visited)) {
         mstack.push(shift, Pre_Visit);
@@ -2487,7 +2487,7 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
     mstack.push(m->in(AddPNode::Base), Pre_Visit);
     return true;
   } else if (clone_shift(off, this, mstack, address_visited)) {
-    address_visited.test(m->_idx); // Flag as address_visited
+    address_visited.test_set(m->_idx); // Flag as address_visited
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     mstack.push(m->in(AddPNode::Base), Pre_Visit);
     return true;

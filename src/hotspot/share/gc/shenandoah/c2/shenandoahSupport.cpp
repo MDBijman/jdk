@@ -153,7 +153,7 @@ bool ShenandoahBarrierC2Support::has_safepoint_between(Node* start, Node* stop, 
 }
 
 #ifdef ASSERT
-bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used) {
+bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, GrowableBitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used) {
   assert(phis.size() == 0, "");
 
   while (true) {
@@ -220,7 +220,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMa
           tty->print("Found Java call");
         }
       } else if (in->is_Phi()) {
-        if (!visited.test(in->_idx)) {
+        if (!visited.test_set(in->_idx)) {
           if (trace) {tty->print("Pushed phi:"); in->dump();}
           phis.push(in, 2);
           in = in->in(1);
@@ -228,7 +228,7 @@ bool ShenandoahBarrierC2Support::verify_helper(Node* in, Node_Stack& phis, BitMa
         }
         if (trace) {tty->print("Already seen phi:"); in->dump();}
       } else if (in->Opcode() == Op_CMoveP || in->Opcode() == Op_CMoveN) {
-        if (!visited.test(in->_idx)) {
+        if (!visited.test_set(in->_idx)) {
           if (trace) {tty->print("Pushed cmovep:"); in->dump();}
           phis.push(in, CMoveNode::IfTrue);
           in = in->in(CMoveNode::IfFalse);
@@ -1811,7 +1811,7 @@ IfNode* ShenandoahBarrierC2Support::find_unswitching_candidate(const IdealLoopTr
 }
 
 
-void ShenandoahBarrierC2Support::optimize_after_expansion(BitMap &visited, Node_Stack &stack, Node_List &old_new, PhaseIdealLoop* phase) {
+void ShenandoahBarrierC2Support::optimize_after_expansion(GrowableBitMap &visited, Node_Stack &stack, Node_List &old_new, PhaseIdealLoop* phase) {
   Node_List heap_stable_tests;
   stack.push(phase->C->start(), 0);
   do {
@@ -1821,8 +1821,7 @@ void ShenandoahBarrierC2Support::optimize_after_expansion(BitMap &visited, Node_
     if (i < n->outcnt()) {
       Node* u = n->raw_out(i);
       stack.set_index(i+1);
-      if (!visited.test(u->_idx)) {
-				visited.set_bit(u->_idx);
+      if (!visited.test_set(u->_idx)) {
         stack.push(u, 0);
       }
     } else {
@@ -2069,9 +2068,7 @@ void MemoryGraphFixer::collect_memory_nodes() {
         continue;
       }
       for (;;) {
-				bool did_visit = visited.test(mem->_idx);
-				visited.set_bit(mem->_idx);
-        if (did_visit || mem->is_Start()) {
+        if (visited.test_set(mem->_idx) || mem->is_Start()) {
           break;
         }
         if (mem->is_Phi()) {

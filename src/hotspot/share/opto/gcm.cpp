@@ -190,13 +190,13 @@ bool PhaseCFG::is_dominating_control(Node* dom_ctrl, Node* n) {
 
 //------------------------------schedule_pinned_nodes--------------------------
 // Set the basic block for Nodes pinned into blocks
-void PhaseCFG::schedule_pinned_nodes(BitMap &visited) {
+void PhaseCFG::schedule_pinned_nodes(GrowableBitMap &visited) {
   // Allocate node stack of size C->live_nodes()+8 to avoid frequent realloc
   GrowableArray <Node*> spstack(C->live_nodes() + 8);
   spstack.push(_root);
   while (spstack.is_nonempty()) {
     Node* node = spstack.pop();
-    if (!visited.test(node->_idx)) { // Test node and flag it as visited
+    if (!visited.test_set(node->_idx)) { // Test node and flag it as visited
       if (node->pinned() && !has_block(node)) {  // Pinned?  Nail it down!
         assert(node->in(0), "pinned Node must have Control");
         // Before setting block replace block_proj control edge
@@ -306,7 +306,7 @@ static Block* find_deepest_input(Node* n, const PhaseCFG* cfg) {
 // Find the earliest Block any instruction can be placed in.  Some instructions
 // are pinned into Blocks.  Unpinned instructions can appear in last block in
 // which all their inputs occur.
-bool PhaseCFG::schedule_early(BitMap &visited, Node_Stack &roots) {
+bool PhaseCFG::schedule_early(GrowableBitMap &visited, Node_Stack &roots) {
   // Allocate stack with enough space to avoid frequent realloc
   Node_Stack nstack(roots.size() + 8);
   // _root will be processed among C->top() inputs
@@ -350,7 +350,7 @@ bool PhaseCFG::schedule_early(BitMap &visited, Node_Stack &roots) {
           continue;
         }
 
-        int is_visited = visited.test(in->_idx);
+        int is_visited = visited.test_set(in->_idx);
         if (!has_block(in)) {
           if (is_visited) {
             assert(false, "graph should be schedulable");
@@ -969,7 +969,7 @@ Node *Node_Backward_Iterator::next() {
 
 //------------------------------ComputeLatenciesBackwards----------------------
 // Compute the latency of all the instructions.
-void PhaseCFG::compute_latencies_backwards(BitMap &visited, Node_Stack &stack) {
+void PhaseCFG::compute_latencies_backwards(GrowableBitMap &visited, Node_Stack &stack) {
 #ifndef PRODUCT
   if (trace_opto_pipelining())
     tty->print("\n#---- ComputeLatenciesBackwards ----\n");
@@ -1274,7 +1274,7 @@ Block* PhaseCFG::hoist_to_cheaper_block(Block* LCA, Block* early, Node* self) {
 // dominator tree of all USES of a value.  Pick the block with the least
 // loop nesting depth that is lowest in the dominator tree.
 extern const char must_clone[];
-void PhaseCFG::schedule_late(BitMap &visited, Node_Stack &stack) {
+void PhaseCFG::schedule_late(GrowableBitMap &visited, Node_Stack &stack) {
 #ifndef PRODUCT
   if (trace_opto_pipelining())
     tty->print("\n#---- schedule_late ----\n");

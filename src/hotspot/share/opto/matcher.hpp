@@ -454,9 +454,9 @@ public:
   // Should the Matcher clone shifts on addressing modes, expecting them to
   // be subsumed into complex addressing expressions or compute them into
   // registers?  True for Intel but false for most RISCs
-  bool pd_clone_address_expressions(AddPNode* m, MStack& mstack, BitMap& address_visited);
+  bool pd_clone_address_expressions(AddPNode* m, MStack& mstack, GrowableBitMap& address_visited);
   // Clone base + offset address expression
-  bool clone_base_plus_offset_address(AddPNode* m, MStack& mstack, BitMap& address_visited);
+  bool clone_base_plus_offset_address(AddPNode* m, MStack& mstack, GrowableBitMap& address_visited);
 
   // Generate implicit null check for narrow oops if it can fold
   // into address expression (x64).

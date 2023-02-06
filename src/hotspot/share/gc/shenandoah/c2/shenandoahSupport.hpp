@@ -79,7 +79,7 @@ public:
 
   static bool expand(Compile* C, PhaseIterGVN& igvn);
   static void pin_and_expand(PhaseIdealLoop* phase);
-  static void optimize_after_expansion(BitMap& visited, Node_Stack& nstack, Node_List& old_new, PhaseIdealLoop* phase);
+  static void optimize_after_expansion(GrowableBitMap& visited, Node_Stack& nstack, Node_List& old_new, PhaseIdealLoop* phase);
 
 #ifdef ASSERT
   static void verify(RootNode* root);

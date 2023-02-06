@@ -2077,10 +2077,10 @@ bool Matcher::clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   return pd_clone_node(n, m, mstack);
 }
 
-bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, BitMap& address_visited) {
+bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, GrowableBitMap& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
-    address_visited.set_bit(m->_idx); // Flag as address_visited
+    address_visited.test_set(m->_idx); // Flag as address_visited
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     // Clone X+offset as it also folds into most addressing expressions
     mstack.push(off, Visit);
@@ -2506,7 +2506,7 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
 #ifndef PRODUCT
 void Matcher::record_new2old(Node* newn, Node* old) {
   _new2old_map.map(newn->_idx, old);
-  if (!_reused.test_set_bit(old->_igv_idx)) {
+  if (!_reused.test_set(old->_igv_idx)) {
     // Reuse the Ideal-level IGV identifier so that the node can be tracked
     // across matching. If there are multiple machine nodes expanded from the
     // same Ideal node, only one will reuse its IGV identifier.

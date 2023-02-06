@@ -371,7 +371,7 @@ struct NTarjan {
   // Setup 'vertex' as DFS to vertex mapping.
   // Setup 'semi' as vertex to DFS mapping.
   // Set 'parent' to DFS parent.
-  static int DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *dfsorder );
+  static int DFS( NTarjan *ntarjan, GrowableBitMap &visited, PhaseIdealLoop *pil, uint *dfsorder );
   void setdepth( uint size, uint *dom_depth );
 
   // Fast union-find work
@@ -506,7 +506,7 @@ void PhaseIdealLoop::Dominators() {
 
 // Perform DFS search.  Setup 'vertex' as DFS to vertex mapping.  Setup
 // 'semi' as vertex to DFS mapping.  Set 'parent' to DFS parent.
-int NTarjan::DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *dfsorder) {
+int NTarjan::DFS( NTarjan *ntarjan, GrowableBitMap &visited, PhaseIdealLoop *pil, uint *dfsorder) {
   // Allocate stack of size C->live_nodes()/8 to avoid frequent realloc
   GrowableArray <Node *> dfstack(pil->C->live_nodes() >> 3);
   Node *b = pil->C->root();
@@ -516,7 +516,7 @@ int NTarjan::DFS( NTarjan *ntarjan, BitMap &visited, PhaseIdealLoop *pil, uint *
 
   while (dfstack.is_nonempty()) {
     b = dfstack.pop();
-    if( !visited.test(b->_idx) ) { // Test node and flag it as visited
+    if( !visited.test_set(b->_idx) ) { // Test node and flag it as visited
       NTarjan *w = &ntarjan[dfsnum];
       // Only fully process control nodes
       w->_control = b;                 // Save actual node

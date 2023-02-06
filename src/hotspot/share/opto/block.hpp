@@ -422,12 +422,12 @@ class PhaseCFG : public Phase {
   void global_code_motion();
 
   // Schedule Nodes early in their basic blocks.
-  bool schedule_early(BitMap &visited, Node_Stack &roots);
+  bool schedule_early(GrowableBitMap &visited, Node_Stack &roots);
 
   // For each node, find the latest block it can be scheduled into
   // and then select the cheapest block between the latest and earliest
   // block to place the node.
-  void schedule_late(BitMap &visited, Node_Stack &stack);
+  void schedule_late(GrowableBitMap &visited, Node_Stack &stack);
 
   // Compute the (backwards) latency of a node from a single use
   int latency_from_use(Node *n, const Node *def, Node *use);
@@ -436,7 +436,7 @@ class PhaseCFG : public Phase {
   void partial_latency_of_defs(Node *n);
 
   // Compute the instruction global latency with a backwards walk
-  void compute_latencies_backwards(BitMap &visited, Node_Stack &stack);
+  void compute_latencies_backwards(GrowableBitMap &visited, Node_Stack &stack);
 
   // Check if a block between early and LCA block of uses is cheaper by
   // frequency-based policy, latency-based policy and random-based policy
@@ -483,7 +483,7 @@ class PhaseCFG : public Phase {
   void replace_block_proj_ctrl( Node *n );
 
   // Set the basic block for pinned Nodes
-  void schedule_pinned_nodes( BitMap &visited );
+  void schedule_pinned_nodes( GrowableBitMap &visited );
 
   // I'll need a few machine-specific GotoNodes.  Clone from this one.
   // Used when building the CFG and creating end nodes for blocks.

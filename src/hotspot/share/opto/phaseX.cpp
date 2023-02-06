@@ -672,10 +672,10 @@ void PhaseTransform::dump_nodes_and_types(const Node* root, uint depth, bool onl
 }
 
 //------------------------------dump_nodes_and_types_recur---------------------
-void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, BitMap &visited) {
+void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, GrowableBitMap &visited) {
   if( !n ) return;
   if( depth == 0 ) return;
-  if( visited.test_set_bit(n->_idx) ) return;
+  if( visited.test_set(n->_idx) ) return;
   for( uint i=0; i<n->len(); i++ ) {
     if( only_ctrl && !(n->is_Region()) && i != TypeFunc::Control ) continue;
     dump_nodes_and_types_recur( n->in(i), depth-1, only_ctrl, visited );
@@ -1041,7 +1041,7 @@ void PhaseIterGVN::verify_step(Node* n) {
         continue;
       }
       // Typical fanout is 1-2, so this call visits about 6 nodes.
-      if (!visited.test_set_bit(n->_idx)) {
+      if (!visited.test_set(n->_idx)) {
         worklist.push(n);
       }
     }

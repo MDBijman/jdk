@@ -1236,11 +1236,11 @@ bool IdealLoopTree::policy_peel_only(PhaseIdealLoop *phase) const {
 //------------------------------clone_up_backedge_goo--------------------------
 // If Node n lives in the back_ctrl block and cannot float, we clone a private
 // version of n in preheader_ctrl block and return that, otherwise return n.
-Node *PhaseIdealLoop::clone_up_backedge_goo(Node *back_ctrl, Node *preheader_ctrl, Node *n, BitMap &visited, Node_Stack &clones) {
+Node *PhaseIdealLoop::clone_up_backedge_goo(Node *back_ctrl, Node *preheader_ctrl, Node *n, GrowableBitMap &visited, Node_Stack &clones) {
   if (get_ctrl(n) != back_ctrl) return n;
 
   // Only visit once
-  if (visited.test(n->_idx)) {
+  if (visited.test_set(n->_idx)) {
     Node *x = clones.find(n->_idx);
     return (x != NULL) ? x : n;
   }

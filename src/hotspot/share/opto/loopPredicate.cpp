@@ -1214,7 +1214,7 @@ float PathFrequency::to(Node* n) {
 }
 
 void PhaseIdealLoop::loop_predication_follow_branches(Node *n, IdealLoopTree *loop, float loop_trip_cnt,
-                                                      PathFrequency& pf, Node_Stack& stack, BitMap& seen,
+                                                      PathFrequency& pf, Node_Stack& stack, GrowableBitMap& seen,
                                                       Node_List& if_proj_list) {
   assert(n->is_Region(), "start from a region");
   Node* tail = loop->tail();
@@ -1227,7 +1227,7 @@ void PhaseIdealLoop::loop_predication_follow_branches(Node *n, IdealLoopTree *lo
     if (i < c->req()) {
       stack.set_index(i+1);
       Node* in = c->in(i);
-      while (!is_dominator(in, tail) && !seen.test(in->_idx)) {
+      while (!is_dominator(in, tail) && !seen.test_set(in->_idx)) {
         IdealLoopTree* in_loop = get_loop(in);
         if (in_loop != loop) {
           in = in_loop->_head->in(LoopNode::EntryControl);

@@ -744,7 +744,7 @@ void IdealGraphPrinter::walk_nodes(Node* start, bool edges, BitMap* temp_set) {
 
   while (nodeStack.length() > 0) {
     Node* n = nodeStack.pop();
-    if (visited.test_set_bit(n->_idx)) {
+    if (visited.test_set(n->_idx)) {
       continue;
     }
 

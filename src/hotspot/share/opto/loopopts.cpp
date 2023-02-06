@@ -1799,7 +1799,7 @@ bool PhaseIdealLoop::ctrl_of_use_out_of_loop(const Node* n, Node* n_ctrl, IdealL
 //------------------------------split_if_with_blocks---------------------------
 // Check for aggressive application of 'split-if' optimization,
 // using basic block level info.
-void PhaseIdealLoop::split_if_with_blocks(BitMap &visited, Node_Stack &nstack) {
+void PhaseIdealLoop::split_if_with_blocks(GrowableBitMap &visited, Node_Stack &nstack) {
   Node* root = C->root();
   visited.set_bit(root->_idx); // first, mark root as visited
   // Do pre-visit work for root
@@ -1812,7 +1812,7 @@ void PhaseIdealLoop::split_if_with_blocks(BitMap &visited, Node_Stack &nstack) {
     if (i < cnt) {
       Node* use = n->raw_out(i);
       ++i;
-      if (use->outcnt() != 0 && !visited.test(use->_idx)) {
+      if (use->outcnt() != 0 && !visited.test_set(use->_idx)) {
         // Now do pre-visit work for this use
         use = split_if_with_blocks_pre(use);
         nstack.push(n, i); // Save parent and next use's index.
@@ -2997,7 +2997,7 @@ void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, No
     if (idx < n->outcnt()) {
       Node* use = n->raw_out(idx);
       idx++;
-      if (!visited.test(use->_idx)) {
+      if (!visited.test_set(use->_idx)) {
         if (member.at(use->_idx)) {
           nstack.push(n, idx);
           n = use;
