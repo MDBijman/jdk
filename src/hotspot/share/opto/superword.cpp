@@ -2475,7 +2475,7 @@ void SuperWord::print_loop(bool whole) {
   Node_Stack stack(_arena, _phase->C->unique() >> 2);
   Node_List rpo_list;
   ArenaBitMap visited(_arena);
-  visited.set_bit(lpt()->_head->_idx);
+  visited.test_set(lpt()->_head->_idx);
   _phase->rpo(lpt()->_head, stack, visited, rpo_list);
   _phase->dump(lpt(), rpo_list.size(), rpo_list );
   if(whole) {

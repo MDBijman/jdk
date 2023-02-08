@@ -549,10 +549,10 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
   // a Def is UP or DOWN.  UP means that it should get a register (ie -
   // it is always in LRP regions), and DOWN means that it is probably
   // on the stack (ie - it crosses HRP regions).
-  Node ***Reaches     = NEW_SPLIT_ARRAY( Node**, _cfg.number_of_blocks() + 1);
-  bool  **UP          = NEW_SPLIT_ARRAY( bool*, _cfg.number_of_blocks() + 1);
-  Node  **debug_defs  = NEW_SPLIT_ARRAY( Node*, spill_cnt );
-  BitMap **UP_entry   = NEW_SPLIT_ARRAY( BitMap*, spill_cnt );
+  Node ***Reaches           = NEW_SPLIT_ARRAY( Node**, _cfg.number_of_blocks() + 1);
+  bool  **UP                = NEW_SPLIT_ARRAY( bool*, _cfg.number_of_blocks() + 1);
+  Node  **debug_defs        = NEW_SPLIT_ARRAY( Node*, spill_cnt );
+  GrowableBitMap **UP_entry = NEW_SPLIT_ARRAY( GrowableBitMap*, spill_cnt );
 
   // Initialize Reaches & UP
   for (bidx = 0; bidx < _cfg.number_of_blocks() + 1; bidx++) {
@@ -758,7 +758,7 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
     for( insidx = 0; insidx < spill_cnt; insidx++ ) {
       debug_defs[insidx] = (UPblock[insidx]) ? NULL : Reachblock[insidx];
       if( UPblock[insidx] )     // Memoize UP decision at block start
-        UP_entry[insidx]->set_bit( b->_pre_order );
+        UP_entry[insidx]->test_set( b->_pre_order );
     }
 
     //----------Walk Instructions in the Block and Split----------

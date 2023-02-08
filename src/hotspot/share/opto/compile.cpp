@@ -324,7 +324,7 @@ void Compile::update_dead_node_list(Unique_Node_List &useful) {
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
     // mark it as dead in dead node list.
-    if (!useful_node_set.at(node_idx)) {
+    if (!useful_node_set.test(node_idx)) {
       record_dead_node(node_idx);
     }
   }
@@ -1174,8 +1174,8 @@ void Compile::print_missing_nodes() {
     const BitMap& useful_member_set = useful.member_set();
     int last_idx = l_nodes_by_walk;
     for (int i = 0; i < last_idx; i++) {
-      if (useful_member_set.at(i)) {
-        if (_dead_node_list.at(i)) {
+      if (useful_member_set.test(i)) {
+        if (_dead_node_list.test(i)) {
           if (_log != NULL) {
             _log->elem("mismatched_node_info node_idx='%d' type='both live and dead'", i);
           }
@@ -1186,7 +1186,7 @@ void Compile::print_missing_nodes() {
           }
         }
       }
-      else if (! _dead_node_list.at(i)) {
+      else if (! _dead_node_list.test(i)) {
         if (_log != NULL) {
           _log->elem("mismatched_node_info node_idx='%d' type='neither live nor dead'", i);
         }
@@ -2813,15 +2813,15 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
          (inputs.size()    == 2 || inputs.size()    == 3);
 }
 
-void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, BitMap &visited) {
+void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, GrowableBitMap &visited) {
   assert(is_vector_bitwise_op(n), "not a root");
 
-  visited.set_bit(n->_idx);
+  visited.test_set(n->_idx);
 
   // 1) Do a DFS walk over the logic cone.
   for (uint i = 1; i < n->req(); i++) {
     Node* in = n->in(i);
-    if (!visited.at(in->_idx) && is_vector_bitwise_op(in)) {
+    if (!visited.test(in->_idx) && is_vector_bitwise_op(in)) {
       process_logic_cone_root(igvn, in, visited);
     }
   }
@@ -3817,7 +3817,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
 void Compile::final_graph_reshaping_walk(Node_Stack& nstack, Node* root, Final_Reshape_Counts& frc, Unique_Node_List& dead_nodes) {
   Unique_Node_List sfpt;
 
-  frc._visited.set_bit(root->_idx); // first, mark node as visited
+  frc._visited.test_set(root->_idx); // first, mark node as visited
   uint cnt = root->req();
   Node *n = root;
   uint  i = 0;
@@ -4006,7 +4006,7 @@ bool Compile::final_graph_reshaping() {
     // Check that I actually visited all kids.  Unreached kids
     // must be infinite loops.
     for (DUIterator_Fast jmax, j = n->fast_outs(jmax); j < jmax; j++)
-      if (!frc._visited.at(n->fast_out(j)->_idx)) {
+      if (!frc._visited.test(n->fast_out(j)->_idx)) {
         record_method_not_compilable("infinite loop");
         return true;            // Found unvisited kid; must be unreach
       }

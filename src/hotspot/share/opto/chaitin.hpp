@@ -255,7 +255,7 @@ public:
   Arena *_arena;
 
   // Keep track of inserted and deleted Nodes
-  BitMap *_yanked;
+  GrowableBitMap *_yanked;
 
   PhaseIFG( Arena *arena );
   void init( uint maxlrg );

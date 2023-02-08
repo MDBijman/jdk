@@ -1132,7 +1132,7 @@ class Compile : public Phase {
   // Logic cone optimization.
   void optimize_logic_cones(PhaseIterGVN &igvn);
   void collect_logic_cone_roots(Unique_Node_List& list);
-  void process_logic_cone_root(PhaseIterGVN &igvn, Node* n, BitMap& visited);
+  void process_logic_cone_root(PhaseIterGVN &igvn, Node* n, GrowableBitMap& visited);
   bool compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_Node_List& inputs);
   uint compute_truth_table(Unique_Node_List& partition, Unique_Node_List& inputs);
   uint eval_macro_logic_op(uint func, uint op1, uint op2, uint op3);

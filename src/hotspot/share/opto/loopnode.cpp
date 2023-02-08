@@ -3514,7 +3514,7 @@ void IdealLoopTree::allpaths_check_safepts(GrowableBitMap &visited, Node_List &s
   assert(stack.size() == 0, "empty stack");
   stack.push(_tail);
   visited.clear();
-  visited.set_bit(_tail->_idx);
+  visited.test_set(_tail->_idx);
   while (stack.size() > 0) {
     Node* n = stack.pop();
     if (n->is_Call() && n->as_Call()->guaranteed_safepoint()) {
@@ -4393,7 +4393,7 @@ void PhaseIdealLoop::build_and_optimize() {
   // Don't need C->root() on worklist since
   // it will be processed among C->top() inputs
   worklist.push(C->top());
-  visited.set_bit(C->top()->_idx); // Set C->top() as visited now
+  visited.test_set(C->top()->_idx); // Set C->top() as visited now
   build_loop_early( visited, worklist, nstack );
 
   // Given early legal placement, try finding counted loops.  This placement
@@ -5789,7 +5789,7 @@ void PhaseIdealLoop::build_loop_late( GrowableBitMap &visited, Node_List &workli
           // pass as we do in the regular pass.  Instead, visit such phis as
           // simple uses of the loop head.
           if( use->in(0) && (use->is_CFG() || use->is_Phi()) ) {
-            if( !visited.at(use->_idx) )
+            if( !visited.test(use->_idx) )
               worklist.push(use);
           } else if( !visited.test_set(use->_idx) ) {
             nstack.push(n, i); // Save parent and next use's index.
@@ -6201,7 +6201,7 @@ void PhaseIdealLoop::dump() const {
   Node_Stack stack(C->live_nodes() >> 2);
   Node_List rpo_list;
   ResourceBitMap visited;
-  visited.set_bit(C->top()->_idx);
+  visited.test_set(C->top()->_idx);
   rpo(C->root(), stack, visited, rpo_list);
   // Dump root loop indexed by last element in PO order
   dump(_ltree_root, rpo_list.size(), rpo_list);
@@ -6302,7 +6302,7 @@ void PhaseIdealLoop::dump_idoms_in_reverse(const Node* n, const Node_List& idom_
 // Result list is in post-order (scan backwards for RPO)
 void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, GrowableBitMap &visited, Node_List &rpo_list) const {
   stk.push(start, 0);
-  visited.set_bit(start->_idx);
+  visited.test_set(start->_idx);
 
   while (stk.is_nonempty()) {
     Node* m   = stk.node();

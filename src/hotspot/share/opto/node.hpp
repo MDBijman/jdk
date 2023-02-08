@@ -1622,12 +1622,12 @@ class Unique_Node_List : public Node_List {
     Node *b = at(_clock_index);
     map( _clock_index, Node_List::pop());
     if (size() != 0) _clock_index++; // Always start from 0
-    _in_worklist->clear_bit(b->_idx);
+    _in_worklist->remove(b->_idx);
     return b;
   }
   Node *remove(uint i) {
     Node *b = Node_List::at(i);
-    _in_worklist->clear_bit(b->_idx);
+    _in_worklist->remove(b->_idx);
     map(i,Node_List::pop());
     return b;
   }

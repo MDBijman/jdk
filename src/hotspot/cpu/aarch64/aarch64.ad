@@ -2595,13 +2595,13 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
       size_fits_all_mem_uses(m, off->in(2)->get_int()) &&
       // Are there other uses besides address expressions?
       !is_visited(off)) {
-    address_visited.set_bit(off->_idx); // Flag as address_visited
+    address_visited.test_set(off->_idx); // Flag as address_visited
     mstack.push(off->in(2), Visit);
     Node *conv = off->in(1);
     if (conv->Opcode() == Op_ConvI2L &&
         // Are there other uses besides address expressions?
         !is_visited(conv)) {
-      address_visited.set_bit(conv->_idx); // Flag as address_visited
+      address_visited.test_set(conv->_idx); // Flag as address_visited
       mstack.push(conv->in(1), Pre_Visit);
     } else {
       mstack.push(conv, Pre_Visit);
@@ -2614,7 +2614,7 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
              // Are there other uses besides address expressions?
              !is_visited(off)) {
     address_visited.test_set(m->_idx); // Flag as address_visited
-    address_visited.set_bit(off->_idx); // Flag as address_visited
+    address_visited.test_set(off->_idx); // Flag as address_visited
     mstack.push(off->in(1), Pre_Visit);
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     mstack.push(m->in(AddPNode::Base), Pre_Visit);

@@ -1801,7 +1801,7 @@ bool PhaseIdealLoop::ctrl_of_use_out_of_loop(const Node* n, Node* n_ctrl, IdealL
 // using basic block level info.
 void PhaseIdealLoop::split_if_with_blocks(GrowableBitMap &visited, Node_Stack &nstack) {
   Node* root = C->root();
-  visited.set_bit(root->_idx); // first, mark root as visited
+  visited.test_set(root->_idx); // first, mark root as visited
   // Do pre-visit work for root
   Node* n   = split_if_with_blocks_pre(root);
   uint  cnt = n->outcnt();
@@ -2967,22 +2967,22 @@ void PhaseIdealLoop::remove_cmpi_loop_exit(IfNode* if_cmp, IdealLoopTree *loop) 
 // on a node in "sched".
 void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, Node_List &sched ) {
 
-  assert(member.at(loop->_head->_idx), "loop head must be in member set");
+  assert(member.test(loop->_head->_idx), "loop head must be in member set");
   ResourceBitMap visited;
   Node_Stack nstack(loop->_body.size());
 
   Node* n  = loop->_head;  // top of stack is cached in "n"
   uint idx = 0;
-  visited.set_bit(n->_idx);
+  visited.test_set(n->_idx);
 
   // Initially push all with no inputs from within member set
   for(uint i = 0; i < loop->_body.size(); i++ ) {
     Node *elt = loop->_body.at(i);
-    if (member.at(elt->_idx)) {
+    if (member.test(elt->_idx)) {
       bool found = false;
       for (uint j = 0; j < elt->req(); j++) {
         Node* def = elt->in(j);
-        if (def && member.at(def->_idx) && def != elt) {
+        if (def && member.test(def->_idx) && def != elt) {
           found = true;
           break;
         }
@@ -2990,8 +2990,8 @@ void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, No
       if (!found && elt != loop->_head) {
         nstack.push(n, idx);
         n = elt;
-        assert(!visited.at(n->_idx), "not seen yet");
-        visited.set_bit(n->_idx);
+        assert(!visited.test(n->_idx), "not seen yet");
+        visited.test_set(n->_idx);
       }
     }
   }
@@ -3002,7 +3002,7 @@ void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, No
       Node* use = n->raw_out(idx);
       idx++;
       if (!visited.test_set(use->_idx)) {
-        if (member.at(use->_idx)) {
+        if (member.test(use->_idx)) {
           nstack.push(n, idx);
           n = use;
           idx = 0;
@@ -3025,7 +3025,7 @@ void PhaseIdealLoop::scheduled_nodelist( IdealLoopTree *loop, BitMap& member, No
 bool PhaseIdealLoop::has_use_in_set( Node* n, BitMap& vset ) {
   for (DUIterator_Fast jmax, j = n->fast_outs(jmax); j < jmax; j++) {
     Node* use = n->fast_out(j);
-    if (vset.at(use->_idx)) {
+    if (vset.test(use->_idx)) {
       return true;
     }
   }
@@ -3105,14 +3105,14 @@ int PhaseIdealLoop::clone_for_use_outside_loop( IdealLoopTree *loop, Node* n, No
 // is in a different basic block than the "IfNode" that uses it, then
 // the compilation is aborted in the code generator.
 void PhaseIdealLoop::clone_for_special_use_inside_loop( IdealLoopTree *loop, Node* n,
-                                                        BitMap& not_peel, Node_List& sink_list, Node_List& worklist ) {
+                                                        GrowableBitMap& not_peel, Node_List& sink_list, Node_List& worklist ) {
   if (n->is_Phi() || n->is_Load()) {
     return;
   }
   assert(worklist.size() == 0, "should be empty");
   for (DUIterator_Fast jmax, j = n->fast_outs(jmax); j < jmax; j++) {
     Node* use = n->fast_out(j);
-    if ( not_peel.at(use->_idx) &&
+    if ( not_peel.test(use->_idx) &&
          (use->is_If() || use->is_CMove() || use->is_Bool()) &&
          use->in(1) == n)  {
       worklist.push(use);
@@ -3125,7 +3125,7 @@ void PhaseIdealLoop::clone_for_special_use_inside_loop( IdealLoopTree *loop, Nod
     _igvn.register_new_node_with_optimizer(n_clone);
     set_ctrl(n_clone, get_ctrl(n));
     sink_list.push(n_clone);
-    not_peel.set_bit(n_clone->_idx);
+    not_peel.test_set(n_clone->_idx);
 #ifndef PRODUCT
     if (TracePartialPeeling) {
       tty->print_cr("special not_peeled cloning old: %d new: %d", n->_idx, n_clone->_idx);
@@ -3170,7 +3170,7 @@ bool PhaseIdealLoop::is_valid_loop_partition( IdealLoopTree *loop, BitMap& peel,
   uint i;
   // Check that peel_list entries are in the peel set
   for (i = 0; i < peel_list.size(); i++) {
-    if (!peel.at(peel_list.at(i)->_idx)) {
+    if (!peel.at(peel_list.test(i)->_idx)) {
       return false;
     }
   }
@@ -3179,8 +3179,8 @@ bool PhaseIdealLoop::is_valid_loop_partition( IdealLoopTree *loop, BitMap& peel,
     Node *def  = loop->_body.at(i);
     uint di = def->_idx;
     // Check that peel set elements are in peel_list
-    if (peel.at(di)) {
-      if (not_peel.at(di)) {
+    if (peel.test(di)) {
+      if (not_peel.test(di)) {
         return false;
       }
       // Must be in peel_list also
@@ -3194,8 +3194,8 @@ bool PhaseIdealLoop::is_valid_loop_partition( IdealLoopTree *loop, BitMap& peel,
       if (!found) {
         return false;
       }
-    } else if (not_peel.at(di)) {
-      if (peel.at(di)) {
+    } else if (not_peel.test(di)) {
+      if (peel.test(di)) {
         return false;
       }
     } else {
@@ -3566,7 +3566,7 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
   // the head through last_peel.
   assert(worklist.size() == 0, "should be empty");
   worklist.push(head);
-  peel.set_bit(head->_idx);
+  peel.test_set(head->_idx);
   while (worklist.size() > 0) {
     Node *n = worklist.pop();
     if (n != last_peel) {
@@ -3587,9 +3587,9 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
     Node *n = loop->_body.at(i);
     Node *n_c = has_ctrl(n) ? get_ctrl(n) : n;
     if (peel.at(n_c->_idx)) {
-      peel.set_bit(n->_idx);
+      peel.test_set(n->_idx);
     } else {
-      not_peel.set_bit(n->_idx);
+      not_peel.test_set(n->_idx);
     }
   }
 
@@ -3640,8 +3640,8 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
             }
             cloned_for_outside_use += new_clones;
             sink_list.push(n);
-            peel.clear_bit(n->_idx);
-            not_peel.set_bit(n->_idx);
+            peel.remove(n->_idx);
+            not_peel.test_set(n->_idx);
             peel_list.remove(i);
             incr = false;
 #ifndef PRODUCT
@@ -3699,7 +3699,7 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
   _igvn.replace_input_of(first_not_peeled, 0, new_head);
   set_loop(new_head, loop);
   loop->_body.push(new_head);
-  not_peel.set_bit(new_head->_idx);
+  not_peel.test_set(new_head->_idx);
   set_idom(new_head, last_peel, dom_depth(first_not_peeled));
   set_idom(first_not_peeled, new_head, dom_depth(first_not_peeled));
 
@@ -3755,7 +3755,7 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
               assert(is_valid_clone_loop_exit_use(loop, use, orig_exit_idx), "clone loop format");
               // use is not in the loop, check if the live range includes the cut
               Node* lp_if = use_c->in(orig_exit_idx)->in(0);
-              if (not_peel.at(lp_if->_idx)) {
+              if (not_peel.test(lp_if->_idx)) {
                 assert(j == orig_exit_idx, "use from original loop");
                 insert_phi_for_loop( use, clone_exit_idx, old_new[def->_idx], def, new_head_clone );
               }
@@ -3780,8 +3780,8 @@ bool PhaseIdealLoop::partial_peel( IdealLoopTree *loop, Node_List &old_new ) {
 
   for (uint i = 0; i < loop->_body.size(); i++) {
     Node *n = loop->_body.at(i);
-    if (!n->is_CFG()           && n->in(0) != NULL        &&
-        not_peel.at(n->_idx) && peel.at(n->in(0)->_idx)) {
+    if (!n->is_CFG()         && n->in(0) != NULL          &&
+        not_peel.at(n->_idx) && peel.test(n->in(0)->_idx)) {
       Node* n_clone = old_new[n->_idx];
       _igvn.replace_input_of(n_clone, 0, new_head_clone);
     }

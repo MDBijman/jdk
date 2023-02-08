@@ -194,12 +194,12 @@ public:
 
   MachNode* mach_null() const { return _mach_null; }
 
-  bool    is_shared( Node *n ) { return _shared.at(n->_idx) != 0; }
-  void   set_shared( Node *n ) {  _shared.set_bit(n->_idx); }
-  bool   is_visited( Node *n ) { return _visited.at(n->_idx) != 0; }
-  void  set_visited( Node *n ) { _visited.set_bit(n->_idx); }
-  bool  is_dontcare( Node *n ) { return _dontcare.at(n->_idx) != 0; }
-  void set_dontcare( Node *n ) {  _dontcare.set_bit(n->_idx); }
+  bool    is_shared( Node *n ) { return _shared.test(n->_idx) != 0; }
+  void   set_shared( Node *n ) {  _shared.test_set(n->_idx); }
+  bool   is_visited( Node *n ) { return _visited.test(n->_idx) != 0; }
+  void  set_visited( Node *n ) { _visited.test_set(n->_idx); }
+  bool  is_dontcare( Node *n ) { return _dontcare.test(n->_idx) != 0; }
+  void set_dontcare( Node *n ) {  _dontcare.test_set(n->_idx); }
 
   // Mode bit to tell DFA and expand rules whether we are running after
   // (or during) register selection.  Usually, the matcher runs before,

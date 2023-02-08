@@ -1909,7 +1909,7 @@ bool PhiNode::is_unsafe_data_reference(Node *in) const {
   ResourceBitMap visited;
 
   nstack.push(in); // Start with unique input.
-  visited.set_bit(in->_idx);
+  visited.test_set(in->_idx);
   while (nstack.size() != 0) {
     Node* n = nstack.pop();
     uint cnt = n->req();
@@ -2516,7 +2516,7 @@ Node* PhiNode::clone_through_phi(Node* root_phi, const Type* t, uint c, PhaseIte
   Node_List  node_map;
 
   stack.push(root_phi, 1); // ignore control
-  visited.set_bit(root_phi->_idx);
+  visited.test_set(root_phi->_idx);
 
   Node* new_phi = new PhiNode(root_phi->in(0), t);
   node_map.map(root_phi->_idx, new_phi);
@@ -2560,7 +2560,7 @@ Node* PhiNode::merge_through_phi(Node* root_phi, PhaseIterGVN* igvn) {
   ResourceBitMap visited;
 
   stack.push(root_phi, 1); // ignore control
-  visited.set_bit(root_phi->_idx);
+  visited.test_set(root_phi->_idx);
 
   VectorBoxNode* cached_vbox = NULL;
   while (stack.is_nonempty()) {

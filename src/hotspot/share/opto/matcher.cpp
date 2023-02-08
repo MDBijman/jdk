@@ -168,13 +168,13 @@ void Matcher::verify_new_nodes_only(Node* xroot) {
   worklist.push(xroot);
   while (worklist.size() > 0) {
     Node* n = worklist.pop();
-    visited.set_bit(n->_idx);
+    visited.test_set(n->_idx);
     assert(C->node_arena()->contains(n), "dead node");
     for (uint j = 0; j < n->req(); j++) {
       Node* in = n->in(j);
       if (in != NULL) {
         assert(C->node_arena()->contains(in), "dead node");
-        if (!visited.at(in->_idx)) {
+        if (!visited.test(in->_idx)) {
           worklist.push(in);
         }
       }
@@ -2108,7 +2108,7 @@ void Matcher::find_shared(Node* n) {
     Node_State nstate = mstack.state();
     uint nop = n->Opcode();
     if (nstate == Pre_Visit) {
-      if (address_visited.at(n->_idx)) { // Visited in address already?
+      if (address_visited.test(n->_idx)) { // Visited in address already?
         // Flag as visited and shared now.
         set_visited(n);
       }

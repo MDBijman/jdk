@@ -423,12 +423,12 @@ class SuperWord : public ResourceObj {
 
   // visited set accessors
   void visited_clear()           { _visited.reinitialize(0); }
-  void visited_set(Node* n)      { return _visited.set_bit(bb_idx(n)); }
-  int visited_test(Node* n)      { return _visited.at(bb_idx(n)); }
+  void visited_set(Node* n)      { _visited.test_set(bb_idx(n)); }
+  int visited_test(Node* n)      { return _visited.test(bb_idx(n)); }
   int visited_test_set(Node* n)  { return _visited.test_set(bb_idx(n)); }
   void post_visited_clear()      { _post_visited.reinitialize(0); }
-  void post_visited_set(Node* n) { return _post_visited.set_bit(bb_idx(n)); }
-  int post_visited_test(Node* n) { return _post_visited.at(bb_idx(n)); }
+  void post_visited_set(Node* n) { _post_visited.test_set(bb_idx(n)); }
+  int post_visited_test(Node* n) { return _post_visited.test(bb_idx(n)); }
 
   // Ensure node_info contains element "i"
   void grow_node_info(int i) { if (i >= _node_info.length()) _node_info.at_put_grow(i, SWNodeInfo::initial); }

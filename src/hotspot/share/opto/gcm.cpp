@@ -311,7 +311,7 @@ bool PhaseCFG::schedule_early(GrowableBitMap &visited, Node_Stack &roots) {
   Node_Stack nstack(roots.size() + 8);
   // _root will be processed among C->top() inputs
   roots.push(C->top(), 0);
-  visited.set_bit(C->top()->_idx);
+  visited.test_set(C->top()->_idx);
 
   while (roots.size() != 0) {
     // Use local variables nstack_top_n & nstack_top_i to cache values
@@ -863,19 +863,19 @@ private:
 
 public:
   // Constructor for the iterator
-  Node_Backward_Iterator(Node *root, BitMap &visited, Node_Stack &stack, PhaseCFG &cfg);
+  Node_Backward_Iterator(Node *root, GrowableBitMap &visited, Node_Stack &stack, PhaseCFG &cfg);
 
   // Postincrement operator to iterate over the nodes
   Node *next();
 
 private:
-  BitMap   &_visited;
+  GrowableBitMap   &_visited;
   Node_Stack  &_stack;
   PhaseCFG &_cfg;
 };
 
 // Constructor for the Node_Backward_Iterator
-Node_Backward_Iterator::Node_Backward_Iterator( Node *root, BitMap &visited, Node_Stack &stack, PhaseCFG &cfg)
+Node_Backward_Iterator::Node_Backward_Iterator( Node *root, GrowableBitMap &visited, Node_Stack &stack, PhaseCFG &cfg)
   : _visited(visited), _stack(stack), _cfg(cfg) {
   // The stack should contain exactly the root
   stack.clear();
@@ -905,7 +905,7 @@ Node *Node_Backward_Iterator::next() {
   // The key variable 'self' was set prior to jumping here.
   while( 1 ) {
 
-    _visited.set_bit(self->_idx);
+    _visited.test_set(self->_idx);
 
     // Now schedule all uses as late as possible.
     const Node* src = self->is_Proj() ? self->in(0) : self;

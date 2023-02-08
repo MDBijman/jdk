@@ -534,7 +534,7 @@ int NTarjan::DFS( NTarjan *ntarjan, GrowableBitMap &visited, PhaseIdealLoop *pil
       for ( int i = b->outcnt(); i-- > 0; ) { // Put on stack backwards
         Node* s = b->raw_out(i);       // Get a use
         // CFG nodes only and not dead stuff
-        if( s->is_CFG() && pil->has_node(s) && !visited.at(s->_idx) ) {
+        if( s->is_CFG() && pil->has_node(s) && !visited.test(s->_idx) ) {
           dfsorder[s->_idx] = dfsnum;  // Cache parent's dfsnum for a later use
           dfstack.push(s);
         }

@@ -146,7 +146,7 @@ void PhaseLive::compute(uint maxlrg) {
       }
     }
     freeset(block);
-    first_pass.set_bit(block->_pre_order);
+    first_pass.test_set(block->_pre_order);
 
     // Inner loop: blocks that picked up new live-out values to be propagated
     while (_worklist->size()) {
@@ -264,7 +264,7 @@ void PhaseLive::add_liveout(Block *p, IndexSet *lo, BitMap &first_pass) {
   if (delta->count()) {                // If actually added things
     _deltas[p->_pre_order-1] = delta; // Flag as on worklist now
     if (!on_worklist &&         // Not on worklist?
-        first_pass.at(p->_pre_order)) {
+        first_pass.test(p->_pre_order)) {
       _worklist->push(p);       // Actually go on worklist if already 1st pass
     }
   } else {                      // Nothing there; just free it

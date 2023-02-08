@@ -133,7 +133,7 @@ void PhaseIFG::Union(uint a, uint b) {
 IndexSet *PhaseIFG::remove_node( uint a ) {
   assert( _is_square, "only on square" );
   assert( !_yanked->test(a), "" );
-  _yanked->set_bit(a);
+  _yanked->test_set(a);
 
   // I remove the LRG from all neighbors.
   LRG &lrg_a = lrgs(a);

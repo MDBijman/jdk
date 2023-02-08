@@ -564,7 +564,7 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
   // Block::_pre_order might not be unique in the context of this function.
   ResourceMark rm;
   ResourceBitMap descendants;
-  descendants.set_bit(block->head()->_idx); // The goto block is a descendant of itself.
+  descendants.test_set(block->head()->_idx); // The goto block is a descendant of itself.
   Block_List worklist;
   worklist.push(out); // Start exploring from the successor block.
   while (worklist.size() > 0) {
@@ -573,15 +573,15 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
     // descendant. Even though all predecessors of b might not have been visited
     // yet, we know that all dominators of b have been already visited (since
     // they must appear in any path from the goto block to b).
-    descendants.set_bit(b->head()->_idx);
+    descendants.test_set(b->head()->_idx);
     b->_dom_depth++;
     for (uint i = 0; i < b->_num_succs; i++) {
       Block* s = b->_succs[i];
       if (s != get_root_block() &&
-          !descendants.at(s->head()->_idx) &&
+          !descendants.test(s->head()->_idx) &&
           // Do not search below non-descendant successors, since any block
           // reachable from them cannot be descendant either.
-          descendants.at(s->_idom->head()->_idx)) {
+          descendants.test(s->_idom->head()->_idx)) {
         worklist.push(s);
       }
     }

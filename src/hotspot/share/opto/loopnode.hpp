@@ -1497,7 +1497,7 @@ public:
   int  clone_for_use_outside_loop( IdealLoopTree *loop, Node* n, Node_List& worklist );
   // clone "n" for special uses that are in the not_peeled region
   void clone_for_special_use_inside_loop( IdealLoopTree *loop, Node* n,
-                                          BitMap& not_peel, Node_List& sink_list, Node_List& worklist );
+                                          GrowableBitMap& not_peel, Node_List& sink_list, Node_List& worklist );
   // Insert phi(lp_entry_val, back_edge_val) at use->in(idx) for loop lp if phi does not already exist
   void insert_phi_for_loop( Node* use, uint idx, Node* lp_entry_val, Node* back_edge_val, LoopNode* lp );
 #ifdef ASSERT

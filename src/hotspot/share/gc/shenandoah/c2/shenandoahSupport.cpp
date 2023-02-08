@@ -773,7 +773,7 @@ Node* ShenandoahBarrierC2Support::no_branches(Node* c, Node* dom, bool allow_one
 Node* ShenandoahBarrierC2Support::dom_mem(Node* mem, Node* ctrl, int alias, Node*& mem_ctrl, PhaseIdealLoop* phase) {
   ResourceMark rm;
   ResourceBitMap wq;
-  wq.set_bit(mem->_idx);
+  wq.test_set(mem->_idx);
   mem_ctrl = phase->ctrl_or_self(mem);
   while (!phase->is_dominator(mem_ctrl, ctrl) || mem_ctrl == ctrl) {
     mem = next_mem(mem, alias);
@@ -1596,8 +1596,8 @@ void ShenandoahBarrierC2Support::pin_and_expand(PhaseIdealLoop* phase) {
 
 }
 
-Node* ShenandoahBarrierC2Support::get_load_addr(PhaseIdealLoop* phase, BitMap& visited, Node* in) {
-  if (visited.test(in->_idx)) {
+Node* ShenandoahBarrierC2Support::get_load_addr(PhaseIdealLoop* phase, GrowableBitMap& visited, Node* in) {
+  if (visited.test_set(in->_idx)) {
     return NULL;
   }
   switch (in->Opcode()) {
