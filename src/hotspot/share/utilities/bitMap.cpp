@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,25 +40,10 @@ bm_word_t* GrowableBitMap::reallocate(bm_word_t* old_map, idx_t old_size_in_bits
   size_t old_size_in_words = calc_size_in_words(old_size_in_bits);
   size_t new_size_in_words = calc_size_in_words(new_size_in_bits);
 
-  bm_word_t* map = NULL;
-
-  if (new_size_in_words > 0) {
-    map = this->allocate(new_size_in_words);
-
-    if (old_map != NULL) {
-      Copy::disjoint_words((HeapWord*)old_map, (HeapWord*) map,
-                           MIN2(old_size_in_words, new_size_in_words));
-    }
-
-    if (clear && (new_size_in_bits > old_size_in_bits)) {
-      // If old_size_in_bits is not word-aligned, then the preceding
-      // copy can include some trailing bits in the final copied word
-      // that also need to be cleared.  See clear_range_within_word.
-      bm_word_t mask = bit_mask(old_size_in_bits) - 1;
-      map[raw_to_words_align_down(old_size_in_bits)] &= mask;
-      // Clear the remaining full words.
-      clear_range_of_words(map, old_size_in_words, new_size_in_words);
-    }
+  bm_word_t* map = this->allocate(new_size_in_words);
+  if (old_map != nullptr) {
+    Copy::disjoint_words((HeapWord*)old_map, (HeapWord*) map,
+        MIN2(old_size_in_words, new_size_in_words));
   }
 
   if (old_map != NULL) {
