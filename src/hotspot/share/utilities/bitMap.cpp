@@ -264,11 +264,11 @@ void BitMap::remove(idx_t bit) {
   }
 }
 
-void BitMap::at_put(idx_t offset, bool value) {
+void BitMap::at_put(idx_t bit, bool value) {
   if (value) {
-    set_bit(offset);
+    set_bit(bit);
   } else {
-    clear_bit(offset);
+    clear_bit(bit);
   }
 }
 
@@ -291,11 +291,11 @@ bool BitMap::par_at_put(idx_t bit, bool value) {
   return value ? par_set_bit(bit) : par_clear_bit(bit);
 }
 
-void BitMap::at_put_range(idx_t start_offset, idx_t end_offset, bool value) {
+void BitMap::at_put_range(idx_t beg, idx_t end, bool value) {
   if (value) {
-    set_range(start_offset, end_offset);
+    set_range(beg, end);
   } else {
-    clear_range(start_offset, end_offset);
+    clear_range(beg, end);
   }
 }
 
