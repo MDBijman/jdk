@@ -48,7 +48,7 @@ private:
     ShenandoahNone
   };
 
-  static bool verify_helper(Node* in, Node_Stack& phis, BitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used);
+  static bool verify_helper(Node* in, Node_Stack& phis, GrowableBitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used);
   static void report_verify_failure(const char* msg, Node* n1 = nullptr, Node* n2 = nullptr);
 #endif
   static Node* dom_mem(Node* mem, Node* ctrl, int alias, Node*& mem_ctrl, PhaseIdealLoop* phase);

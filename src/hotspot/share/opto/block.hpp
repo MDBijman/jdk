@@ -632,7 +632,7 @@ class PhaseCFG : public Phase {
 
   // Debugging print of CFG
   void dump( ) const;           // CFG only
-  void _dump_cfg( const Node *end, BitMap &visited  ) const;
+  void _dump_cfg( const Node *end, GrowableBitMap &visited  ) const;
   void dump_headers();
 #else
   bool trace_opto_pipelining() const { return false; }

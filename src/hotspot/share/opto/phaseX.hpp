@@ -352,7 +352,7 @@ public:
   void dump_new( uint new_lidx ) const;
   void dump_types() const;
   void dump_nodes_and_types(const Node *root, uint depth, bool only_ctrl = true);
-  void dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, BitMap &visited);
+  void dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, GrowableBitMap &visited);
 
   uint   _count_progress;       // For profiling, count transforms that make progress
   void   set_progress()        { ++_count_progress; assert( allow_progress(),"No progress allowed during verification"); }

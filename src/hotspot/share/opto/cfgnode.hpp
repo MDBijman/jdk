@@ -258,7 +258,7 @@ public:
   virtual void dump_spec(outputStream *st) const;
 #endif
 #ifdef ASSERT
-  void verify_adr_type(BitMap& visited, const TypePtr* at) const;
+  void verify_adr_type(GrowableBitMap& visited, const TypePtr* at) const;
   void verify_adr_type(bool recursive = false) const;
 #else //ASSERT
   void verify_adr_type(bool recursive = false) const {}
