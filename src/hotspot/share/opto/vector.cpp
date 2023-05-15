@@ -299,7 +299,7 @@ void PhaseVector::scalarize_vbox_node(VectorBoxNode* vec_box) {
 
 void PhaseVector::expand_vbox_node(VectorBoxNode* vec_box) {
   if (vec_box->outcnt() > 0) {
-    ResourceBitMap visited;
+    VectorSet visited;
     Node* vbox = vec_box->in(VectorBoxNode::Box);
     Node* vect = vec_box->in(VectorBoxNode::Value);
     Node* result = expand_vbox_node_helper(vbox, vect, vec_box->box_type(),
@@ -314,7 +314,7 @@ Node* PhaseVector::expand_vbox_node_helper(Node* vbox,
                                            Node* vect,
                                            const TypeInstPtr* box_type,
                                            const TypeVect* vect_type,
-                                           GrowableBitMap &visited) {
+                                           VectorSet &visited) {
   // JDK-8304948 shows an example that there may be a cycle in the graph.
   if (visited.test_set(vbox->_idx)) {
     assert(vbox->is_Phi(), "should be phi");

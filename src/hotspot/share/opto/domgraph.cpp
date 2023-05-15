@@ -23,13 +23,13 @@
  */
 
 #include "precompiled.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/block.hpp"
 #include "opto/machnode.hpp"
 #include "opto/phaseX.hpp"
 #include "opto/rootnode.hpp"
-#include "utilities/bitMap.hpp"
 
 // Portions of code courtesy of Clifford Click
 
@@ -372,7 +372,7 @@ struct NTarjan {
   // Setup 'vertex' as DFS to vertex mapping.
   // Setup 'semi' as vertex to DFS mapping.
   // Set 'parent' to DFS parent.
-  static int DFS( NTarjan *ntarjan, GrowableBitMap &visited, PhaseIdealLoop *pil, uint *dfsorder );
+  static int DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uint *dfsorder );
   void setdepth( uint size, uint *dom_depth );
 
   // Fast union-find work
@@ -405,7 +405,7 @@ void PhaseIdealLoop::Dominators() {
 
   // Tarjan's algorithm, almost verbatim:
   // Step 1:
-  ResourceBitMap visited;
+  VectorSet visited;
   int dfsnum = NTarjan::DFS( ntarjan, visited, this, dfsorder);
 
   // Tarjan is using 1-based arrays, so these are some initialize flags
@@ -507,7 +507,7 @@ void PhaseIdealLoop::Dominators() {
 
 // Perform DFS search.  Setup 'vertex' as DFS to vertex mapping.  Setup
 // 'semi' as vertex to DFS mapping.  Set 'parent' to DFS parent.
-int NTarjan::DFS( NTarjan *ntarjan, GrowableBitMap &visited, PhaseIdealLoop *pil, uint *dfsorder) {
+int NTarjan::DFS( NTarjan *ntarjan, VectorSet &visited, PhaseIdealLoop *pil, uint *dfsorder) {
   // Allocate stack of size C->live_nodes()/8 to avoid frequent realloc
   GrowableArray <Node *> dfstack(pil->C->live_nodes() >> 3);
   Node *b = pil->C->root();

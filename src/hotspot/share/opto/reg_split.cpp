@@ -23,6 +23,7 @@
  */
 
 #include "precompiled.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.inline.hpp"
 #include "opto/addnode.hpp"
@@ -32,8 +33,6 @@
 #include "opto/chaitin.hpp"
 #include "opto/loopnode.hpp"
 #include "opto/machnode.hpp"
-#include "utilities/bitMap.hpp"
-#include "utilities/bitMap.inline.hpp"
 
 //------------------------------Split--------------------------------------
 // Walk the graph in RPO and for each lrg which spills, propagate reaching
@@ -550,10 +549,10 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
   // a Def is UP or DOWN.  UP means that it should get a register (ie -
   // it is always in LRP regions), and DOWN means that it is probably
   // on the stack (ie - it crosses HRP regions).
-  Node ***Reaches           = NEW_SPLIT_ARRAY( Node**, _cfg.number_of_blocks() + 1);
-  bool  **UP                = NEW_SPLIT_ARRAY( bool*, _cfg.number_of_blocks() + 1);
-  Node  **debug_defs        = NEW_SPLIT_ARRAY( Node*, spill_cnt );
-  GrowableBitMap **UP_entry = NEW_SPLIT_ARRAY( GrowableBitMap*, spill_cnt );
+  Node ***Reaches     = NEW_SPLIT_ARRAY( Node**, _cfg.number_of_blocks() + 1);
+  bool  **UP          = NEW_SPLIT_ARRAY( bool*, _cfg.number_of_blocks() + 1);
+  Node  **debug_defs  = NEW_SPLIT_ARRAY( Node*, spill_cnt );
+  VectorSet **UP_entry= NEW_SPLIT_ARRAY( VectorSet*, spill_cnt );
 
   // Initialize Reaches & UP
   for (bidx = 0; bidx < _cfg.number_of_blocks() + 1; bidx++) {
@@ -569,11 +568,9 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
 
 #undef NEW_SPLIT_ARRAY
 
-  // Initialize to array of empty bitmaps
-  for( slidx = 0; slidx < spill_cnt; slidx++ ) {
-	 UP_entry[slidx] = NEW_RESOURCE_OBJ(ArenaBitMap);
-     new (UP_entry[slidx]) ArenaBitMap(split_arena, 0);
-  }
+  // Initialize to array of empty vectorsets
+  for( slidx = 0; slidx < spill_cnt; slidx++ )
+    UP_entry[slidx] = new VectorSet(split_arena);
 
   //----------PASS 1----------
   //----------Propagation & Node Insertion Code----------
@@ -759,7 +756,7 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
     for( insidx = 0; insidx < spill_cnt; insidx++ ) {
       debug_defs[insidx] = (UPblock[insidx]) ? nullptr : Reachblock[insidx];
       if( UPblock[insidx] )     // Memoize UP decision at block start
-        UP_entry[insidx]->test_set( b->_pre_order );
+        UP_entry[insidx]->set( b->_pre_order );
     }
 
     //----------Walk Instructions in the Block and Split----------

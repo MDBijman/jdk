@@ -371,12 +371,12 @@ bool RegionNode::is_possible_unsafe_loop(const PhaseGVN* phase) const {
 bool RegionNode::is_unreachable_from_root(const PhaseGVN* phase) const {
   ResourceMark rm;
   Node_List nstack;
-  ResourceBitMap visited;
+  VectorSet visited;
 
   // Mark all control nodes reachable from root outputs
   Node* n = (Node*)phase->C->root();
   nstack.push(n);
-  visited.set_bit(n->_idx);
+  visited.set(n->_idx);
   while (nstack.size() != 0) {
     n = nstack.pop();
     uint max = n->outcnt();
@@ -1128,7 +1128,7 @@ PhiNode* PhiNode::split_out_instance(const TypePtr* at, PhaseIterGVN *igvn) cons
 
 //------------------------verify_adr_type--------------------------------------
 #ifdef ASSERT
-void PhiNode::verify_adr_type(GrowableBitMap& visited, const TypePtr* at) const {
+void PhiNode::verify_adr_type(VectorSet& visited, const TypePtr* at) const {
   if (visited.test_set(_idx))  return;  //already visited
 
   // recheck constructor invariants:
@@ -1171,7 +1171,7 @@ void PhiNode::verify_adr_type(bool recursive) const {
          "Phi::adr_type must be pre-normalized");
 
   if (recursive) {
-    ResourceBitMap visited;
+    VectorSet visited;
     verify_adr_type(visited, _adr_type);
   }
 }
@@ -1902,10 +1902,10 @@ bool PhiNode::is_unsafe_data_reference(Node *in) const {
   ResourceMark rm;
 
   Node_List nstack;
-  ResourceBitMap visited;
+  VectorSet visited;
 
   nstack.push(in); // Start with unique input.
-  visited.test_set(in->_idx);
+  visited.set(in->_idx);
   while (nstack.size() != 0) {
     Node* n = nstack.pop();
     uint cnt = n->req();
@@ -2508,11 +2508,11 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
 
 Node* PhiNode::clone_through_phi(Node* root_phi, const Type* t, uint c, PhaseIterGVN* igvn) {
   Node_Stack stack(1);
-  ResourceBitMap visited;
+  VectorSet  visited;
   Node_List  node_map;
 
   stack.push(root_phi, 1); // ignore control
-  visited.test_set(root_phi->_idx);
+  visited.set(root_phi->_idx);
 
   Node* new_phi = new PhiNode(root_phi->in(0), t);
   node_map.map(root_phi->_idx, new_phi);
@@ -2553,10 +2553,10 @@ Node* PhiNode::clone_through_phi(Node* root_phi, const Type* t, uint c, PhaseIte
 
 Node* PhiNode::merge_through_phi(Node* root_phi, PhaseIterGVN* igvn) {
   Node_Stack stack(1);
-  ResourceBitMap visited;
+  VectorSet  visited;
 
   stack.push(root_phi, 1); // ignore control
-  visited.test_set(root_phi->_idx);
+  visited.set(root_phi->_idx);
 
   VectorBoxNode* cached_vbox = nullptr;
   while (stack.is_nonempty()) {

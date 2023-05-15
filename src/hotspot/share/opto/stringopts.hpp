@@ -44,7 +44,7 @@ class PhaseStringOpts : public Phase {
   int byte_adr_idx;
 
   // A set for use by various stages
-  ResourceBitMap _visited;
+  VectorSet _visited;
 
   // Collect a list of all SB.toString calls
   Node_List collect_toString_calls();

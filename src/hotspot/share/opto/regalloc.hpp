@@ -46,7 +46,7 @@ class PhaseRegAlloc : public Phase {
 protected:
   OptoRegPair  *_node_regs;
   uint         _node_regs_max_index;
-  ResourceBitMap  _node_oops;      // Mapping from node indices to oopiness
+  VectorSet    _node_oops;         // Mapping from node indices to oopiness
 
   void alloc_node_regs(int size);  // allocate _node_regs table with at least "size" elements
 

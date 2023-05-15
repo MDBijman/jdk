@@ -2643,7 +2643,7 @@ bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
 // Should the Matcher clone shifts on addressing modes, expecting them
 // to be subsumed into complex addressing expressions or compute them
 // into registers?
-bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, GrowableBitMap& address_visited) {
+bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   if (clone_base_plus_offset_address(m, mstack, address_visited)) {
     return true;
   }
@@ -2653,13 +2653,13 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
       size_fits_all_mem_uses(m, off->in(2)->get_int()) &&
       // Are there other uses besides address expressions?
       !is_visited(off)) {
-    address_visited.test_set(off->_idx); // Flag as address_visited
+    address_visited.set(off->_idx); // Flag as address_visited
     mstack.push(off->in(2), Visit);
     Node *conv = off->in(1);
     if (conv->Opcode() == Op_ConvI2L &&
         // Are there other uses besides address expressions?
         !is_visited(conv)) {
-      address_visited.test_set(conv->_idx); // Flag as address_visited
+      address_visited.set(conv->_idx); // Flag as address_visited
       mstack.push(conv->in(1), Pre_Visit);
     } else {
       mstack.push(conv, Pre_Visit);
@@ -2672,7 +2672,7 @@ bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack,
              // Are there other uses besides address expressions?
              !is_visited(off)) {
     address_visited.test_set(m->_idx); // Flag as address_visited
-    address_visited.test_set(off->_idx); // Flag as address_visited
+    address_visited.set(off->_idx); // Flag as address_visited
     mstack.push(off->in(1), Pre_Visit);
     mstack.push(m->in(AddPNode::Address), Pre_Visit);
     mstack.push(m->in(AddPNode::Base), Pre_Visit);

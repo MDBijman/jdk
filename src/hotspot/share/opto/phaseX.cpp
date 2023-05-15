@@ -311,13 +311,14 @@ void  NodeHash::clear() {
 //-----------------------remove_useless_nodes----------------------------------
 // Remove useless nodes from value table,
 // implementation does not depend on hash function
-void NodeHash::remove_useless_nodes(const BitMap& useful) {
+void NodeHash::remove_useless_nodes(VectorSet &useful) {
+
   // Dead nodes in the hash table inherited from GVN should not replace
   // existing nodes, remove dead nodes.
   uint max = size();
-  Node* sentinel_node = sentinel();
+  Node *sentinel_node = sentinel();
   for( uint i = 0; i < max; ++i ) {
-    Node* n = at(i);
+    Node *n = at(i);
     if(n != nullptr && n != sentinel_node && !useful.test(n->_idx)) {
       debug_only(n->exit_hash_lock()); // Unlock the node when removed
       _table[i] = sentinel_node;       // Replace with placeholder
@@ -680,12 +681,12 @@ void PhaseTransform::dump_types( ) const {
 
 //------------------------------dump_nodes_and_types---------------------------
 void PhaseTransform::dump_nodes_and_types(const Node* root, uint depth, bool only_ctrl) {
-  ResourceBitMap visited;
+  VectorSet visited;
   dump_nodes_and_types_recur(root, depth, only_ctrl, visited);
 }
 
 //------------------------------dump_nodes_and_types_recur---------------------
-void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, GrowableBitMap &visited) {
+void PhaseTransform::dump_nodes_and_types_recur( const Node *n, uint depth, bool only_ctrl, VectorSet &visited) {
   if( !n ) return;
   if( depth == 0 ) return;
   if( visited.test_set(n->_idx) ) return;
@@ -1032,7 +1033,7 @@ void PhaseIterGVN::shuffle_worklist() {
 void PhaseIterGVN::verify_step(Node* n) {
   if (is_verify_def_use()) {
     ResourceMark rm;
-    ResourceBitMap visited;
+    VectorSet visited;
     Node_List worklist;
 
     _verify_window[_verify_counter % _verify_window_size] = n;

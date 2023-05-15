@@ -40,7 +40,7 @@ class PhaseVector : public Phase {
                                 Node* vect,
                                 const TypeInstPtr* box_type,
                                 const TypeVect* vect_type,
-                                GrowableBitMap &visited);
+                                VectorSet &visited);
   Node* expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
                                Node* value,
                                const TypeInstPtr* box_type,

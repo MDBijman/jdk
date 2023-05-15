@@ -459,7 +459,7 @@ void XBarrierSetC2::analyze_dominating_barriers() const {
         // Dominating block? Look around for safepoints
         ResourceMark rm;
         Block_List stack;
-        ResourceBitMap visited;
+        VectorSet visited;
         stack.push(load_block);
         bool safepoint_found = block_has_safepoint(load_block);
         while (!safepoint_found && stack.size() > 0) {

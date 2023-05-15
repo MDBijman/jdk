@@ -99,7 +99,7 @@ OptoReg::Name PhaseRegAlloc::offset2reg(int stk_offset) const {
 //------------------------------set_oop----------------------------------------
 void PhaseRegAlloc::set_oop( const Node *n, bool is_an_oop ) {
   if( is_an_oop ) {
-    _node_oops.test_set(n->_idx);
+    _node_oops.set(n->_idx);
   }
 }
 

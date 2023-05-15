@@ -373,7 +373,7 @@ Node_List PhaseStringOpts::collect_toString_calls() {
   Node_List string_calls;
   Node_List worklist;
 
-  _visited.reinitialize(0);
+  _visited.clear();
 
   // Prime the worklist
   for (uint i = 1; i < C->root()->len(); i++) {
@@ -1090,7 +1090,7 @@ bool StringConcat::validate_control_flow() {
   // Validate that all these results produced are contained within
   // this cluster of objects.  First collect all the results produced
   // by calls in the region.
-  _stringopts->_visited.reinitialize(0);
+  _stringopts->_visited.clear();
   Node_List worklist;
   Node* final_result = _end->proj_out_or_null(TypeFunc::Parms);
   for (uint i = 0; i < _control.size(); i++) {

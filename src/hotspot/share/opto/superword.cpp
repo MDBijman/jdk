@@ -23,6 +23,7 @@
 
 #include "precompiled.hpp"
 #include "compiler/compileLog.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
@@ -40,7 +41,6 @@
 #include "opto/vectornode.hpp"
 #include "opto/movenode.hpp"
 #include "utilities/powerOfTwo.hpp"
-#include "utilities/bitMap.hpp"
 
 //
 //                  S U P E R W O R D   T R A N S F O R M
@@ -64,8 +64,8 @@ SuperWord::SuperWord(PhaseIdealLoop* phase) :
   _align_to_ref(nullptr),                                   // memory reference to align vectors to
   _disjoint_ptrs(arena(), 8,  0, OrderedPair::initial),     // runtime disambiguated pointer pairs
   _dg(_arena),                                              // dependence graph
-  _visited(arena(), 2),                                        // visited node set
-  _post_visited(arena(), 2),                                   // post visited node set
+  _visited(arena()),                                        // visited node set
+  _post_visited(arena()),                                   // post visited node set
   _n_idx_list(arena(), 8),                                  // scratch list of (node,index) pairs
   _nlist(arena(), 8, 0, nullptr),                           // scratch list of nodes
   _stk(arena(), 8, 0, nullptr),                             // scratch stack of nodes
@@ -543,7 +543,7 @@ void SuperWord::mark_reductions() {
     // Reduction cycle found. Mark all nodes in the found path as reductions.
     current = first;
     for (int i = 0; i < path_nodes; i++) {
-      _loop_reductions.test_set(current->_idx);
+      _loop_reductions.set(current->_idx);
       current = original_input(current, reduction_input);
     }
   }
@@ -2582,7 +2582,7 @@ public:
     }
 
     // Map edges for packset nodes
-    ResourceBitMap set;
+    VectorSet set;
     for (int i = 0; i < packset.length(); i++) {
       Node_List* p = packset.at(i);
       set.clear();
@@ -2837,8 +2837,8 @@ void SuperWord::schedule_reorder_memops(Node_List &memops_schedule) {
 void SuperWord::print_loop(bool whole) {
   Node_Stack stack(_arena, _phase->C->unique() >> 2);
   Node_List rpo_list;
-  ArenaBitMap visited(_arena);
-  visited.test_set(lpt()->_head->_idx);
+  VectorSet visited(_arena);
+  visited.set(lpt()->_head->_idx);
   _phase->rpo(lpt()->_head, stack, visited, rpo_list);
   _phase->dump(lpt(), rpo_list.size(), rpo_list );
   if(whole) {

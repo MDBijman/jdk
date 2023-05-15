@@ -558,12 +558,7 @@ protected:
 
 #define FREE_FAST(old)\
     /* nop */
-//
-// This only allocates 'type' on the resource arena. If type has non-trivial constructors,
-// Users require to construct object properely using placement new. eg.
-//   MyClass* auto p = NEW_RESOURCE_OBJ(MyClass);
-//   new (p) MyClass(...);
-//
+
 #define NEW_RESOURCE_OBJ(type)\
   NEW_RESOURCE_ARRAY(type, 1)
 

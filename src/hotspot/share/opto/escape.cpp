@@ -27,6 +27,7 @@
 #include "compiler/compileLog.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/c2compiler.hpp"
@@ -39,12 +40,10 @@
 #include "opto/movenode.hpp"
 #include "opto/rootnode.hpp"
 #include "utilities/macros.hpp"
-#include "utilities/bitMap.hpp"
-#include "utilities/bitMap.inline.hpp"
 
 ConnectionGraph::ConnectionGraph(Compile * C, PhaseIterGVN *igvn, int invocation) :
   _nodes(C->comp_arena(), C->unique(), C->unique(), nullptr),
-  _in_worklist(C->comp_arena(), 2),
+  _in_worklist(C->comp_arena()),
   _next_pidx(0),
   _collecting(true),
   _verify(false),
@@ -1603,7 +1602,7 @@ int ConnectionGraph::add_java_object_edges(JavaObjectNode* jobj, bool populate_w
     }
   }
   _worklist.clear();
-  _in_worklist.clear();
+  _in_worklist.reset();
   return new_edges;
 }
 
@@ -3188,7 +3187,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
   GrowableArray<PhiNode *>  orig_phis;
   PhaseIterGVN  *igvn = _igvn;
   uint new_index_start = (uint) _compile->num_alias_types();
-  ResourceBitMap visited;
+  VectorSet visited;
   ideal_nodes.clear(); // Reset for use with set_map/get_map.
   uint unique_old = _compile->unique();
 

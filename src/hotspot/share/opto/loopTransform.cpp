@@ -1234,7 +1234,7 @@ bool IdealLoopTree::policy_peel_only(PhaseIdealLoop *phase) const {
 //------------------------------clone_up_backedge_goo--------------------------
 // If Node n lives in the back_ctrl block and cannot float, we clone a private
 // version of n in preheader_ctrl block and return that, otherwise return n.
-Node *PhaseIdealLoop::clone_up_backedge_goo(Node *back_ctrl, Node *preheader_ctrl, Node *n, GrowableBitMap &visited, Node_Stack &clones) {
+Node *PhaseIdealLoop::clone_up_backedge_goo(Node *back_ctrl, Node *preheader_ctrl, Node *n, VectorSet &visited, Node_Stack &clones) {
   if (get_ctrl(n) != back_ctrl) return n;
 
   // Only visit once
@@ -1722,7 +1722,7 @@ void PhaseIdealLoop::insert_pre_post_loops(IdealLoopTree *loop, Node_List &old_n
   outer_main_head->set_req(LoopNode::EntryControl, min_taken);
   set_idom(outer_main_head, min_taken, dd_main_head);
 
-  ResourceBitMap visited;
+  VectorSet visited;
   Node_Stack clones(main_head->back_control()->outcnt());
   // Step B3: Make the fall-in values to the main-loop come from the
   // fall-out values of the pre-loop.
@@ -2010,7 +2010,7 @@ Node *PhaseIdealLoop::insert_post_loop(IdealLoopTree* loop, Node_List& old_new,
   post_head->set_req(LoopNode::EntryControl, zer_taken);
   set_idom(post_head, zer_taken, dd_main_exit);
 
-  ResourceBitMap visited;
+  VectorSet visited;
   Node_Stack clones(main_head->back_control()->outcnt());
   // Step A3: Make the fall-in values to the post-loop come from the
   // fall-out values of the main-loop.
@@ -2186,8 +2186,8 @@ void PhaseIdealLoop::do_unroll(IdealLoopTree *loop, Node_List &old_new, bool adj
   if (C->do_vector_loop() && (PrintOpto && (VerifyLoopOptimizations || TraceLoopOpts))) {
     Node_Stack stack(C->live_nodes() >> 2);
     Node_List rpo_list;
-    ResourceBitMap visited;
-    visited.test_set(loop_head->_idx);
+    VectorSet visited;
+    visited.set(loop_head->_idx);
     rpo(loop_head, stack, visited, rpo_list);
     dump(loop, rpo_list.size(), rpo_list);
   }
@@ -4119,27 +4119,27 @@ bool PhaseIdealLoop::match_fill_loop(IdealLoopTree* lpt, Node*& store, Node*& st
   }
 
   // No make sure all the other nodes in the loop can be handled
-  ResourceBitMap ok;
+  VectorSet ok;
 
   // store related values are ok
-  ok.test_set(store->_idx);
-  ok.test_set(store->in(MemNode::Memory)->_idx);
+  ok.set(store->_idx);
+  ok.set(store->in(MemNode::Memory)->_idx);
 
   CountedLoopEndNode* loop_exit = head->loopexit();
 
   // Loop structure is ok
-  ok.test_set(head->_idx);
-  ok.test_set(loop_exit->_idx);
-  ok.test_set(head->phi()->_idx);
-  ok.test_set(head->incr()->_idx);
-  ok.test_set(loop_exit->cmp_node()->_idx);
-  ok.test_set(loop_exit->in(1)->_idx);
+  ok.set(head->_idx);
+  ok.set(loop_exit->_idx);
+  ok.set(head->phi()->_idx);
+  ok.set(head->incr()->_idx);
+  ok.set(loop_exit->cmp_node()->_idx);
+  ok.set(loop_exit->in(1)->_idx);
 
   // Address elements are ok
-  if (con)   ok.test_set(con->_idx);
-  if (shift) ok.test_set(shift->_idx);
-  if (cast)  ok.test_set(cast->_idx);
-  if (conv)  ok.test_set(conv->_idx);
+  if (con)   ok.set(con->_idx);
+  if (shift) ok.set(shift->_idx);
+  if (cast)  ok.set(cast->_idx);
+  if (conv)  ok.set(conv->_idx);
 
   for (uint i = 0; msg == nullptr && i < lpt->_body.size(); i++) {
     Node* n = lpt->_body.at(i);

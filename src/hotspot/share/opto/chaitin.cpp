@@ -694,7 +694,7 @@ void PhaseChaitin::Register_Allocate() {
           set_pair(i, hi, lo);
         }
       }
-      if( lrg._is_oop ) _node_oops.test_set(i);
+      if( lrg._is_oop ) _node_oops.set(i);
     } else {
       set_bad(i);
     }
@@ -1293,7 +1293,7 @@ void PhaseChaitin::Simplify( ) {
     // Find cheapest guy
     debug_only( int lo_no_simplify=0; );
     for (uint i = _hi_degree; i; i = lrgs(i)._next) {
-      assert(!_ifg->_yanked->at(i), "");
+      assert(!_ifg->_yanked->test(i), "");
       // It's just vaguely possible to move hi-degree to lo-degree without
       // going through a just-lo-degree stage: If you remove a double from
       // a float live range it's degree will drop by 2 and you can skip the
@@ -1689,7 +1689,7 @@ uint PhaseChaitin::Select( ) {
 // Set the 'spilled_once' or 'spilled_twice' flag on a node.
 void PhaseChaitin::set_was_spilled( Node *n ) {
   if( _spilled_once.test_set(n->_idx) )
-    _spilled_twice.test_set(n->_idx);
+    _spilled_twice.set(n->_idx);
 }
 
 // Convert Ideal spill instructions into proper FramePtr + offset Loads and

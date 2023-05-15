@@ -48,7 +48,7 @@ private:
     ShenandoahNone
   };
 
-  static bool verify_helper(Node* in, Node_Stack& phis, GrowableBitMap& visited, verify_type t, bool trace, Unique_Node_List& barriers_used);
+  static bool verify_helper(Node* in, Node_Stack& phis, VectorSet& visited, verify_type t, bool trace, Unique_Node_List& barriers_used);
   static void report_verify_failure(const char* msg, Node* n1 = nullptr, Node* n2 = nullptr);
 #endif
   static Node* dom_mem(Node* mem, Node* ctrl, int alias, Node*& mem_ctrl, PhaseIdealLoop* phase);
@@ -69,7 +69,7 @@ private:
   static void fix_ctrl(Node* barrier, Node* region, const MemoryGraphFixer& fixer, Unique_Node_List& uses, Unique_Node_List& uses_to_ignore, uint last, PhaseIdealLoop* phase);
   static IfNode* find_unswitching_candidate(const IdealLoopTree *loop, PhaseIdealLoop* phase);
 
-  static Node* get_load_addr(PhaseIdealLoop* phase, GrowableBitMap& visited, Node* lrb);
+  static Node* get_load_addr(PhaseIdealLoop* phase, VectorSet& visited, Node* lrb);
 public:
   static bool is_dominator(Node* d_c, Node* n_c, Node* d, Node* n, PhaseIdealLoop* phase);
   static bool is_dominator_same_ctrl(Node* c, Node* d, Node* n, PhaseIdealLoop* phase);
@@ -79,7 +79,7 @@ public:
 
   static bool expand(Compile* C, PhaseIterGVN& igvn);
   static void pin_and_expand(PhaseIdealLoop* phase);
-  static void optimize_after_expansion(GrowableBitMap& visited, Node_Stack& nstack, Node_List& old_new, PhaseIdealLoop* phase);
+  static void optimize_after_expansion(VectorSet& visited, Node_Stack& nstack, Node_List& old_new, PhaseIdealLoop* phase);
 
 #ifdef ASSERT
   static void verify(RootNode* root);

@@ -41,7 +41,7 @@ class OuterStripMinedLoopEndNode;
 class PathFrequency;
 class PhaseIdealLoop;
 class CountedLoopReserveKit;
-class BitMap;
+class VectorSet;
 class Invariance;
 struct small_cache;
 
@@ -673,11 +673,11 @@ public:
   // Given dominators, try to find loops with calls that must always be
   // executed (call dominates loop tail).  These loops do not need non-call
   // safepoints (ncsfpt).
-  void check_safepts(GrowableBitMap &visited, Node_List &stack);
+  void check_safepts(VectorSet &visited, Node_List &stack);
 
   // Allpaths backwards scan from loop tail, terminating each path at first safepoint
   // encountered.
-  void allpaths_check_safepts(GrowableBitMap &visited, Node_List &stack);
+  void allpaths_check_safepts(VectorSet &visited, Node_List &stack);
 
   // Remove safepoints from loop. Optionally keeping one.
   void remove_safepoints(PhaseIdealLoop* phase, bool keep_one);
@@ -1079,8 +1079,8 @@ private:
 #endif
 
   // Place Data nodes in some loop nest
-  void build_loop_early( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack );
-  void build_loop_late ( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack );
+  void build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack );
+  void build_loop_late ( VectorSet &visited, Node_List &worklist, Node_Stack &nstack );
   void build_loop_late_post_work(Node* n, bool pinned);
   void build_loop_late_post(Node* n);
   void verify_strip_mined_scheduling(Node *n, Node* least);
@@ -1299,7 +1299,7 @@ public:
   void insert_vector_post_loop(IdealLoopTree *loop, Node_List &old_new);
   // If Node n lives in the back_ctrl block, we clone a private version of n
   // in preheader_ctrl block and return that, otherwise return n.
-  Node *clone_up_backedge_goo( Node *back_ctrl, Node *preheader_ctrl, Node *n, GrowableBitMap &visited, Node_Stack &clones );
+  Node *clone_up_backedge_goo( Node *back_ctrl, Node *preheader_ctrl, Node *n, VectorSet &visited, Node_Stack &clones );
 
   // Take steps to maximally unroll the loop.  Peel any odd iterations, then
   // unroll to do double iterations.  The next round of major loop transforms
@@ -1407,7 +1407,7 @@ public:
                                     Deoptimization::DeoptReason reason);
   bool loop_predication_should_follow_branches(IdealLoopTree *loop, ProjNode *predicate_proj, float& loop_trip_cnt);
   void loop_predication_follow_branches(Node *c, IdealLoopTree *loop, float loop_trip_cnt,
-                                        PathFrequency& pf, Node_Stack& stack, GrowableBitMap& seen,
+                                        PathFrequency& pf, Node_Stack& stack, VectorSet& seen,
                                         Node_List& if_proj_list);
   ProjNode* insert_initial_skeleton_predicate(IfNode* iff, IdealLoopTree *loop,
                                               ProjNode* proj, ProjNode *predicate_proj,
@@ -1485,21 +1485,21 @@ public:
   bool duplicate_loop_backedge(IdealLoopTree *loop, Node_List &old_new);
 
   // Create a scheduled list of nodes control dependent on ctrl set.
-  void scheduled_nodelist( IdealLoopTree *loop, BitMap& ctrl, Node_List &sched );
+  void scheduled_nodelist( IdealLoopTree *loop, VectorSet& ctrl, Node_List &sched );
   // Has a use in the vector set
-  bool has_use_in_set( Node* n, BitMap& vset );
+  bool has_use_in_set( Node* n, VectorSet& vset );
   // Has use internal to the vector set (ie. not in a phi at the loop head)
-  bool has_use_internal_to_set( Node* n, BitMap& vset, IdealLoopTree *loop );
+  bool has_use_internal_to_set( Node* n, VectorSet& vset, IdealLoopTree *loop );
   // clone "n" for uses that are outside of loop
   int  clone_for_use_outside_loop( IdealLoopTree *loop, Node* n, Node_List& worklist );
   // clone "n" for special uses that are in the not_peeled region
   void clone_for_special_use_inside_loop( IdealLoopTree *loop, Node* n,
-                                          GrowableBitMap& not_peel, Node_List& sink_list, Node_List& worklist );
+                                          VectorSet& not_peel, Node_List& sink_list, Node_List& worklist );
   // Insert phi(lp_entry_val, back_edge_val) at use->in(idx) for loop lp if phi does not already exist
   void insert_phi_for_loop( Node* use, uint idx, Node* lp_entry_val, Node* back_edge_val, LoopNode* lp );
 #ifdef ASSERT
   // Validate the loop partition sets: peel and not_peel
-  bool is_valid_loop_partition( IdealLoopTree *loop, GrowableBitMap& peel, Node_List& peel_list, GrowableBitMap& not_peel );
+  bool is_valid_loop_partition( IdealLoopTree *loop, VectorSet& peel, Node_List& peel_list, VectorSet& not_peel );
   // Ensure that uses outside of loop are of the right form
   bool is_valid_clone_loop_form( IdealLoopTree *loop, Node_List& peel_list,
                                  uint orig_exit_idx, uint clone_exit_idx);
@@ -1547,7 +1547,7 @@ public:
 
   // Check for aggressive application of 'split-if' optimization,
   // using basic block level info.
-  void  split_if_with_blocks     ( GrowableBitMap &visited, Node_Stack &nstack);
+  void  split_if_with_blocks     ( VectorSet &visited, Node_Stack &nstack);
   Node *split_if_with_blocks_pre ( Node *n );
   void  split_if_with_blocks_post( Node *n );
   Node *has_local_phi_input( Node *n );
@@ -1714,7 +1714,7 @@ public:
   bool verify_nodes(Node* n, const PhaseIdealLoop* phase_verify) const;
 #endif
 
-  void rpo(Node* start, Node_Stack &stk, GrowableBitMap &visited, Node_List &rpo_list) const;
+  void rpo(Node* start, Node_Stack &stk, VectorSet &visited, Node_List &rpo_list) const;
 
   void check_counted_loop_shape(IdealLoopTree* loop, Node* x, BasicType bt) NOT_DEBUG_RETURN;
 

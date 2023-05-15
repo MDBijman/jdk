@@ -763,7 +763,7 @@ void ZBarrierSetC2::analyze_dominating_barriers_impl(Node_List& accesses, Node_L
         // Dominating block? Look around for safepoints
         ResourceMark rm;
         Block_List stack;
-        ResourceBitMap visited;
+        VectorSet visited;
         stack.push(access_block);
         bool safepoint_found = block_has_safepoint(access_block);
         while (!safepoint_found && stack.size() > 0) {

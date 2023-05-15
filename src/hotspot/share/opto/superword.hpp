@@ -319,8 +319,8 @@ class SuperWord : public ResourceObj {
   DepGraph _dg; // Dependence graph
 
   // Scratch pads
-  ArenaBitMap  _visited;       // Visited set
-  ArenaBitMap  _post_visited;  // Post-visited set
+  VectorSet    _visited;       // Visited set
+  VectorSet    _post_visited;  // Post-visited set
   Node_Stack   _n_idx_list;    // List of (node,index) pairs
   GrowableArray<Node*> _nlist; // List of nodes
   GrowableArray<Node*> _stk;   // Stack of nodes
@@ -358,7 +358,7 @@ class SuperWord : public ResourceObj {
   IdealLoopTree* _lpt;             // Current loop tree node
   CountedLoopNode* _lp;            // Current CountedLoopNode
   CountedLoopEndNode* _pre_loop_end; // Current CountedLoopEndNode of pre loop
-  ArenaBitMap    _loop_reductions; // Reduction nodes in the current loop
+  VectorSet      _loop_reductions; // Reduction nodes in the current loop
   Node*          _bb;              // Current basic block
   PhiNode*       _iv;              // Induction var
   bool           _race_possible;   // In cases where SDMU is true
@@ -428,12 +428,12 @@ class SuperWord : public ResourceObj {
   void set_bb_idx(Node* n, int i)  { _bb_idx.at_put_grow(n->_idx, i); }
 
   // visited set accessors
-  void visited_clear()           { _visited.reinitialize(0); }
-  void visited_set(Node* n)      { _visited.test_set(bb_idx(n)); }
+  void visited_clear()           { _visited.clear(); }
+  void visited_set(Node* n)      { return _visited.set(bb_idx(n)); }
   int visited_test(Node* n)      { return _visited.test(bb_idx(n)); }
   int visited_test_set(Node* n)  { return _visited.test_set(bb_idx(n)); }
-  void post_visited_clear()      { _post_visited.reinitialize(0); }
-  void post_visited_set(Node* n) { _post_visited.test_set(bb_idx(n)); }
+  void post_visited_clear()      { _post_visited.clear(); }
+  void post_visited_set(Node* n) { return _post_visited.set(bb_idx(n)); }
   int post_visited_test(Node* n) { return _post_visited.test(bb_idx(n)); }
 
   // Ensure node_info contains element "i"
@@ -514,7 +514,7 @@ public:
   // almost-equivalent but faster SuperWord::mark_reductions() is preferable.
   static bool is_reduction(const Node* n);
   // Whether n is marked as a reduction node.
-  bool is_marked_reduction(Node* n) { return _loop_reductions.test_set(n->_idx); }
+  bool is_marked_reduction(Node* n) { return _loop_reductions.test(n->_idx); }
   // Whether the current loop has any reduction node.
   bool is_marked_reduction_loop() { return !_loop_reductions.is_empty(); }
 private:

@@ -319,7 +319,7 @@ void Compile::identify_useful_nodes(Unique_Node_List &useful) {
 // list. Consider all non-useful nodes to be useless i.e., dead nodes.
 void Compile::update_dead_node_list(Unique_Node_List &useful) {
   uint max_idx = unique();
-  const BitMap& useful_node_set = useful.member_set();
+  VectorSet& useful_node_set = useful.member_set();
 
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
@@ -623,7 +623,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _coarsened_locks   (comp_arena(), 8, 0, nullptr),
                   _congraph(nullptr),
                   NOT_PRODUCT(_igv_printer(nullptr) COMMA)
-                  _dead_node_list(comp_arena(), 2),
+                  _dead_node_list(comp_arena()),
                   _dead_node_count(0),
                   _node_arena(mtCompiler),
                   _old_arena(mtCompiler),
@@ -910,7 +910,7 @@ Compile::Compile( ciEnv* ci_env,
     _failure_reason(nullptr),
     _congraph(nullptr),
     NOT_PRODUCT(_igv_printer(nullptr) COMMA)
-    _dead_node_list(comp_arena(), 2),
+    _dead_node_list(comp_arena()),
     _dead_node_count(0),
     _node_arena(mtCompiler),
     _old_arena(mtCompiler),
@@ -953,7 +953,7 @@ Compile::Compile( ciEnv* ci_env,
     // The following is a dummy for the sake of GraphKit::gen_stub
     Unique_Node_List for_igvn(comp_arena());
     set_for_igvn(&for_igvn);  // not used, but some GraphKit guys push on this
-    PhaseGVN gvn(Thread::current()->resource_area(), 255);
+    PhaseGVN gvn(Thread::current()->resource_area(),255);
     set_initial_gvn(&gvn);    // not significant, but GraphKit guys use it pervasively
     gvn.transform_no_reclaim(top());
 
@@ -1177,7 +1177,7 @@ void Compile::print_missing_nodes() {
       _log->stamp();
       _log->end_head();
     }
-    const BitMap& useful_member_set = useful.member_set();
+    VectorSet& useful_member_set = useful.member_set();
     int last_idx = l_nodes_by_walk;
     for (int i = 0; i < last_idx; i++) {
       if (useful_member_set.test(i)) {
@@ -1892,7 +1892,7 @@ void Compile::process_for_unstable_if_traps(PhaseIterGVN& igvn) {
     bool modified = trap->modified();
 
     if (next_bci != -1 && !modified) {
-      assert(!_dead_node_list.at(unc->_idx), "changing a dead node!");
+      assert(!_dead_node_list.test(unc->_idx), "changing a dead node!");
       JVMState* jvms = unc->jvms();
       ciMethod* method = jvms->method();
       ciBytecodeStream iter(method);
@@ -2819,10 +2819,10 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
          (inputs.size()    == 2 || inputs.size()    == 3);
 }
 
-void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, GrowableBitMap &visited) {
+void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, VectorSet &visited) {
   assert(is_vector_bitwise_op(n), "not a root");
 
-  visited.test_set(n->_idx);
+  visited.set(n->_idx);
 
   // 1) Do a DFS walk over the logic cone.
   for (uint i = 1; i < n->req(); i++) {
@@ -2865,7 +2865,7 @@ void Compile::optimize_logic_cones(PhaseIterGVN &igvn) {
       const TypeVect* vt = n->bottom_type()->is_vect();
       bool supported = Matcher::match_rule_supported_vector(Op_MacroLogicV, vt->length(), vt->element_basic_type());
       if (supported) {
-        ArenaBitMap visited(comp_arena(), 2);
+        VectorSet visited(comp_arena());
         process_logic_cone_root(igvn, n, visited);
       }
     }
@@ -2881,8 +2881,8 @@ void Compile::Code_Gen() {
 
   // Perform instruction selection.  You might think we could reclaim Matcher
   // memory PDQ, but actually the Matcher is used in generating spill code.
-  // Internals of the Matcher (including some BitMaps) must remain live
-  // for awhile - thus I cannot reclaim Matcher memory lest a BitMap usage
+  // Internals of the Matcher (including some VectorSets) must remain live
+  // for awhile - thus I cannot reclaim Matcher memory lest a VectorSet usage
   // set a bit in reclaimed memory.
 
   // In debug mode can dump m._nodes.dump() for mapping of ideal to machine
@@ -2995,7 +2995,7 @@ struct Final_Reshape_Counts : public StackObj {
   int  _double_count;           // count double ops requiring more precision
   int  _java_call_count;        // count non-inlined 'java' calls
   int  _inner_loop_count;       // count loops which need alignment
-  ResourceBitMap _visited;      // Visitation flags
+  VectorSet _visited;           // Visitation flags
   Node_List _tests;             // Set of IfNodes & PCTableNodes
 
   Final_Reshape_Counts() :
@@ -3823,7 +3823,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
 void Compile::final_graph_reshaping_walk(Node_Stack& nstack, Node* root, Final_Reshape_Counts& frc, Unique_Node_List& dead_nodes) {
   Unique_Node_List sfpt;
 
-  frc._visited.test_set(root->_idx); // first, mark node as visited
+  frc._visited.set(root->_idx); // first, mark node as visited
   uint cnt = root->req();
   Node *n = root;
   uint  i = 0;

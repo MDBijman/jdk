@@ -118,7 +118,7 @@ class  PhaseTransform;
 class  PointsToNode;
 class  Type;
 class  TypePtr;
-class  ArenaBitMap;
+class  VectorSet;
 
 class JavaObjectNode;
 class LocalVarNode;
@@ -325,7 +325,7 @@ private:
                                         // ConnectionGraph nodes.
 
   GrowableArray<PointsToNode*>  _worklist; // Nodes to be processed
-  ArenaBitMap                   _in_worklist;
+  VectorSet                  _in_worklist;
   uint                         _next_pidx;
 
   bool            _collecting; // Indicates whether escape information

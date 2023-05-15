@@ -30,8 +30,8 @@
 #include "ci/ciMethod.hpp"
 #include "ci/ciMethodData.hpp"
 #include "code/dependencies.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
-#include "utilities/bitMap.hpp"
 #include "utilities/growableArray.hpp"
 #endif
 
@@ -51,9 +51,9 @@ class BCEscapeAnalyzer : public ArenaObj {
   ciMethod*         _method;
   ciMethodData*     _methodData;
   int               _arg_size;
-  ArenaBitMap       _arg_local;
-  ArenaBitMap       _arg_stack;
-  ArenaBitMap       _arg_returned;
+  VectorSet         _arg_local;
+  VectorSet         _arg_stack;
+  VectorSet         _arg_returned;
   enum{ ARG_OFFSET_MAX = 31};
   uint              *_arg_modified;
 
@@ -80,7 +80,7 @@ class BCEscapeAnalyzer : public ArenaObj {
   bool is_argument(ArgumentMap vars);
   bool is_arg_stack(ArgumentMap vars);
   bool returns_all(ArgumentMap vars);
-  void clear_bits(ArgumentMap vars, BitMap &bs);
+  void clear_bits(ArgumentMap vars, VectorSet &bs);
   void set_method_escape(ArgumentMap vars);
   void set_global_escape(ArgumentMap vars, bool merge = false);
   void set_modified(ArgumentMap vars, int offs, int size);

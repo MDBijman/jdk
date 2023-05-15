@@ -27,6 +27,7 @@
 #include "compiler/compileLog.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
@@ -46,8 +47,6 @@
 #include "opto/superword.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "utilities/powerOfTwo.hpp"
-#include "utilities/bitMap.hpp"
-#include "utilities/bitMap.inline.hpp"
 
 //=============================================================================
 //--------------------------is_cloop_ind_var-----------------------------------
@@ -3510,11 +3509,11 @@ bool IdealLoopTree::beautify_loops( PhaseIdealLoop *phase ) {
 //------------------------------allpaths_check_safepts----------------------------
 // Allpaths backwards scan from loop tail, terminating each path at first safepoint
 // encountered.  Helper for check_safepts.
-void IdealLoopTree::allpaths_check_safepts(GrowableBitMap &visited, Node_List &stack) {
+void IdealLoopTree::allpaths_check_safepts(VectorSet &visited, Node_List &stack) {
   assert(stack.size() == 0, "empty stack");
   stack.push(_tail);
   visited.clear();
-  visited.test_set(_tail->_idx);
+  visited.set(_tail->_idx);
   while (stack.size() > 0) {
     Node* n = stack.pop();
     if (n->is_Call() && n->as_Call()->guaranteed_safepoint()) {
@@ -3593,7 +3592,7 @@ void IdealLoopTree::allpaths_check_safepts(GrowableBitMap &visited, Node_List &s
 //     from the tail to the head, terminating a path when a call or sfpt
 //     is encountered, to find the ncsfpt's that are closest to the tail.
 //
-void IdealLoopTree::check_safepts(GrowableBitMap &visited, Node_List &stack) {
+void IdealLoopTree::check_safepts(VectorSet &visited, Node_List &stack) {
   // Bottom up traversal
   IdealLoopTree* ch = _child;
   if (_child) _child->check_safepts(visited, stack);
@@ -4267,7 +4266,7 @@ void PhaseIdealLoop::build_and_optimize() {
 
   _created_loop_node = false;
 
-  ResourceBitMap visited;
+  VectorSet visited;
   // Pre-grow the mapping from Nodes to IdealLoopTrees.
   _nodes.map(C->unique(), nullptr);
   memset(_nodes.adr(), 0, wordSize * C->unique());
@@ -4393,7 +4392,7 @@ void PhaseIdealLoop::build_and_optimize() {
   // Don't need C->root() on worklist since
   // it will be processed among C->top() inputs
   worklist.push(C->top());
-  visited.test_set(C->top()->_idx); // Set C->top() as visited now
+  visited.set(C->top()->_idx); // Set C->top() as visited now
   build_loop_early( visited, worklist, nstack );
 
   // Given early legal placement, try finding counted loops.  This placement
@@ -5423,7 +5422,7 @@ bool PhaseIdealLoop::is_in_irreducible_loop(RegionNode* region) {
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // First pass computes the earliest controlling node possible.  This is the
 // controlling input with the deepest dominating depth.
-void PhaseIdealLoop::build_loop_early( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
   while (worklist.size() != 0) {
     // Use local variables nstack_top_n & nstack_top_i to cache values
     // on nstack's top.
@@ -5873,7 +5872,7 @@ void PhaseIdealLoop::init_dom_lca_tags() {
 //------------------------------build_loop_late--------------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late( GrowableBitMap &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
   while (worklist.size() != 0) {
     Node *n = worklist.pop();
     // Only visit once
@@ -6310,8 +6309,8 @@ void PhaseIdealLoop::dump() const {
   ResourceMark rm;
   Node_Stack stack(C->live_nodes() >> 2);
   Node_List rpo_list;
-  ResourceBitMap visited;
-  visited.test_set(C->top()->_idx);
+  VectorSet visited;
+  visited.set(C->top()->_idx);
   rpo(C->root(), stack, visited, rpo_list);
   // Dump root loop indexed by last element in PO order
   dump(_ltree_root, rpo_list.size(), rpo_list);
@@ -6410,9 +6409,9 @@ void PhaseIdealLoop::dump_idoms_in_reverse(const Node* n, const Node_List& idom_
 
 // Collect a R-P-O for the whole CFG.
 // Result list is in post-order (scan backwards for RPO)
-void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, GrowableBitMap &visited, Node_List &rpo_list) const {
+void PhaseIdealLoop::rpo(Node* start, Node_Stack &stk, VectorSet &visited, Node_List &rpo_list) const {
   stk.push(start, 0);
-  visited.test_set(start->_idx);
+  visited.set(start->_idx);
 
   while (stk.is_nonempty()) {
     Node* m   = stk.node();

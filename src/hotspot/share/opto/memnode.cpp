@@ -3408,7 +3408,7 @@ void MemBarNode::set_load_store_pair(MemBarNode* leading, MemBarNode* trailing) 
 MemBarNode* MemBarNode::trailing_membar() const {
   ResourceMark rm;
   Node* trailing = (Node*)this;
-  ResourceBitMap seen;
+  VectorSet seen;
   Node_Stack multis(0);
   do {
     Node* c = trailing;
@@ -3452,7 +3452,7 @@ MemBarNode* MemBarNode::trailing_membar() const {
 
 MemBarNode* MemBarNode::leading_membar() const {
   ResourceMark rm;
-  ResourceBitMap seen;
+  VectorSet seen;
   Node_Stack regions(0);
   Node* leading = in(0);
   while (leading != nullptr && (!leading->is_MemBar() || !leading->as_MemBar()->leading())) {

@@ -113,7 +113,7 @@ public:
 void BCEscapeAnalyzer::set_returned(ArgumentMap vars) {
   for (int i = 0; i < _arg_size; i++) {
     if (vars.contains(i))
-      _arg_returned.test_set(i);
+      _arg_returned.set(i);
   }
   _return_local = _return_local && !(vars.contains_unknown() || vars.contains_allocated());
   _return_allocated = _return_allocated && vars.contains_allocated() && !(vars.contains_unknown() || vars.contains_vars());
@@ -149,7 +149,7 @@ bool BCEscapeAnalyzer::returns_all(ArgumentMap vars) {
   return true;
 }
 
-void BCEscapeAnalyzer::clear_bits(ArgumentMap vars, BitMap &bm) {
+void BCEscapeAnalyzer::clear_bits(ArgumentMap vars, VectorSet &bm) {
   for (int i = 0; i < _arg_size; i++) {
     if (vars.contains(i)) {
       bm.remove(i);
@@ -1237,15 +1237,15 @@ void BCEscapeAnalyzer::initialize() {
   ciSignature* sig = method()->signature();
   int j = 0;
   if (!method()->is_static()) {
-    _arg_local.test_set(0);
-    _arg_stack.test_set(0);
+    _arg_local.set(0);
+    _arg_stack.set(0);
     j++;
   }
   for (i = 0; i < sig->count(); i++) {
     ciType* t = sig->type_at(i);
     if (!t->is_primitive_type()) {
-      _arg_local.test_set(j);
-      _arg_stack.test_set(j);
+      _arg_local.set(j);
+      _arg_stack.set(j);
     }
     j += t->size();
   }
@@ -1387,11 +1387,11 @@ void BCEscapeAnalyzer::read_escape_info() {
   // read escape information from method descriptor
   for (int i = 0; i < _arg_size; i++) {
     if (methodData()->is_arg_local(i))
-      _arg_local.test_set(i);
+      _arg_local.set(i);
     if (methodData()->is_arg_stack(i))
-      _arg_stack.test_set(i);
+      _arg_stack.set(i);
     if (methodData()->is_arg_returned(i))
-      _arg_returned.test_set(i);
+      _arg_returned.set(i);
     _arg_modified[i] = methodData()->arg_modified(i);
   }
   _return_local = methodData()->eflag_set(MethodData::return_local);

@@ -62,9 +62,9 @@ const uint Matcher::_end_rematerialize   = _END_REMATERIALIZE;
 Matcher::Matcher()
 : PhaseTransform( Phase::Ins_Select ),
   _states_arena(Chunk::medium_size, mtCompiler),
-  _visited(&_states_arena, 2),
-  _shared(&_states_arena, 2),
-  _dontcare(&_states_arena, 2),
+  _visited(&_states_arena),
+  _shared(&_states_arena),
+  _dontcare(&_states_arena),
   _reduceOp(reduceOp), _leftOp(leftOp), _rightOp(rightOp),
   _swallowed(swallowed),
   _begin_inst_chain_rule(_BEGIN_INST_CHAIN_RULE),
@@ -74,7 +74,7 @@ Matcher::Matcher()
 #ifndef PRODUCT
   _old2new_map(C->comp_arena()),
   _new2old_map(C->comp_arena()),
-  _reused(C->comp_arena(), 2),
+  _reused(C->comp_arena()),
 #endif // !PRODUCT
   _allocation_started(false),
   _ruleName(ruleName),
@@ -165,11 +165,11 @@ void Matcher::verify_new_nodes_only(Node* xroot) {
   // Make sure that the new graph only references new nodes
   ResourceMark rm;
   Unique_Node_List worklist;
-  ResourceBitMap visited;
+  VectorSet visited;
   worklist.push(xroot);
   while (worklist.size() > 0) {
     Node* n = worklist.pop();
-    visited.test_set(n->_idx);
+    visited.set(n->_idx);
     assert(C->node_arena()->contains(n), "dead node");
     for (uint j = 0; j < n->req(); j++) {
       Node* in = n->in(j);
@@ -2092,7 +2092,7 @@ bool Matcher::clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   return pd_clone_node(n, m, mstack);
 }
 
-bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, GrowableBitMap& address_visited) {
+bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
     address_visited.test_set(m->_idx); // Flag as address_visited
@@ -2115,7 +2115,7 @@ void Matcher::find_shared(Node* n) {
   // Allocate stack of size C->live_nodes() * 2 to avoid frequent realloc
   MStack mstack(C->live_nodes() * 2);
   // Mark nodes as address_visited if they are inputs to an address expression
-  ResourceBitMap address_visited;
+  VectorSet address_visited;
   mstack.push(n, Visit);     // Don't need to pre-visit root node
   while (mstack.is_nonempty()) {
     n = mstack.node();       // Leave node on stack

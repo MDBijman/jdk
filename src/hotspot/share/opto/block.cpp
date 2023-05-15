@@ -23,6 +23,7 @@
  */
 
 #include "precompiled.hpp"
+#include "libadt/vectset.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "compiler/compilerDirectives.hpp"
@@ -36,8 +37,6 @@
 #include "opto/rootnode.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/powerOfTwo.hpp"
-#include "utilities/bitMap.hpp"
-#include "utilities/bitMap.inline.hpp"
 
 void Block_Array::grow( uint i ) {
   assert(i >= Max(), "must be an overflow");
@@ -408,7 +407,7 @@ PhaseCFG::PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher)
 // The RootNode both starts and ends it's own block.  Do this with a recursive
 // backwards walk over the control edges.
 uint PhaseCFG::build_cfg() {
-  ResourceBitMap visited;
+  VectorSet visited;
 
   // Allocate stack with enough space to avoid frequent realloc
   Node_Stack nstack(C->live_nodes() >> 1);
@@ -563,8 +562,8 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
   // The exploration uses header indices as block identifiers, since
   // Block::_pre_order might not be unique in the context of this function.
   ResourceMark rm;
-  ResourceBitMap descendants;
-  descendants.test_set(block->head()->_idx); // The goto block is a descendant of itself.
+  VectorSet descendants;
+  descendants.set(block->head()->_idx); // The goto block is a descendant of itself.
   Block_List worklist;
   worklist.push(out); // Start exploring from the successor block.
   while (worklist.size() > 0) {
@@ -573,7 +572,7 @@ void PhaseCFG::insert_goto_at(uint block_no, uint succ_no) {
     // descendant. Even though all predecessors of b might not have been visited
     // yet, we know that all dominators of b have been already visited (since
     // they must appear in any path from the goto block to b).
-    descendants.test_set(b->head()->_idx);
+    descendants.set(b->head()->_idx);
     b->_dom_depth++;
     for (uint i = 0; i < b->_num_succs; i++) {
       Block* s = b->_succs[i];
@@ -1254,7 +1253,7 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
 
 //------------------------------dump-------------------------------------------
 #ifndef PRODUCT
-void PhaseCFG::_dump_cfg( const Node *end, GrowableBitMap &visited  ) const {
+void PhaseCFG::_dump_cfg( const Node *end, VectorSet &visited  ) const {
   const Node *x = end->is_block_proj();
   assert( x, "not a CFG" );
 
@@ -1285,7 +1284,7 @@ void PhaseCFG::dump( ) const {
       block->dump(this);
     }
   } else {                      // Else do it with a DFS
-    ArenaBitMap visited(_block_arena);
+    VectorSet visited(_block_arena);
     _dump_cfg(_root,visited);
   }
 }
