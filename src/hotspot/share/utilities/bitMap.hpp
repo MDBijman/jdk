@@ -555,18 +555,30 @@ public:
   ReverseRBFIterator& operator++();
 };
 
-// CRTP: BitmapWithAllocator exposes the following Allocator interfaces upward to GrowableBitMap.
+// BitmapWithAllocator exposes the following Allocator interfaces:
 //
 //  bm_word_t* allocate(idx_t size_in_words) const;
 //  void free(bm_word_t* map, idx_t size_in_words) const
 //
-template <class BitMapWithAllocator>
 class GrowableBitMap : public BitMap {
  protected:
   GrowableBitMap() : GrowableBitMap(nullptr, 0) {}
   GrowableBitMap(bm_word_t* map, idx_t size_in_bits) : BitMap(map, size_in_bits) {}
 
+
+  // Protected functions, that are used by BitMap sub-classes that support them.
+
+  virtual bm_word_t* allocate(idx_t size_in_words) const = 0;
+
+  virtual void free(bm_word_t* map, idx_t size_in_words) const = 0;
+
+  virtual bm_word_t* reallocate(bm_word_t* map, idx_t old_size_in_bits, idx_t new_size_in_bits, bool clear) const;
+
  public:
+ 
+  // Grow and set if bit is not set and return the previous value.
+  bool test_set(idx_t bit);
+
   // Set up and optionally clear the bitmap memory.
   //
   // Precondition: The bitmap was default constructed and has
@@ -578,13 +590,14 @@ class GrowableBitMap : public BitMap {
   // Can be called on previously initialized bitmaps.
   void reinitialize(idx_t new_size_in_bits, bool clear = true);
 
-  // Protected functions, that are used by BitMap sub-classes that support them.
-
   // Resize the backing bitmap memory.
   //
   // Old bits are transferred to the new memory
-  // and the extended memory is optionally cleared.
-  void resize(idx_t new_size_in_bits, bool clear = true);
+  // and the extended memory is cleared.
+  void resize(idx_t new_size_in_bits, bool clear = true) {
+    bm_word_t* new_map = reallocate(map(), size(), new_size_in_bits, clear);
+    update(new_map, new_size_in_bits);
+  }
 };
 
 // A concrete implementation of the "abstract" BitMap class.
@@ -597,7 +610,7 @@ class BitMapView : public BitMap {
 };
 
 // A BitMap with storage in a specific Arena.
-class ArenaBitMap : public GrowableBitMap<ArenaBitMap> {
+class ArenaBitMap : public GrowableBitMap {
   Arena* const _arena;
 
   NONCOPYABLE(ArenaBitMap);
@@ -606,27 +619,25 @@ class ArenaBitMap : public GrowableBitMap<ArenaBitMap> {
   ArenaBitMap(Arena* arena, idx_t size_in_bits, bool clear = true);
 
   bm_word_t* allocate(idx_t size_in_words) const;
-  bm_word_t* reallocate(bm_word_t* old_map, size_t old_size_in_words, size_t new_size_in_words) const;
   void free(bm_word_t* map, idx_t size_in_words) const {
     // ArenaBitMaps don't free memory.
   }
 };
 
 // A BitMap with storage in the current threads resource area.
-class ResourceBitMap : public GrowableBitMap<ResourceBitMap> {
+class ResourceBitMap : public GrowableBitMap {
  public:
   ResourceBitMap() : ResourceBitMap(0) {}
   explicit ResourceBitMap(idx_t size_in_bits, bool clear = true);
 
   bm_word_t* allocate(idx_t size_in_words) const;
-  bm_word_t* reallocate(bm_word_t* old_map, size_t old_size_in_words, size_t new_size_in_words) const;
   void free(bm_word_t* map, idx_t size_in_words) const {
     // ResourceBitMaps don't free memory.
   }
 };
 
 // A BitMap with storage in the CHeap.
-class CHeapBitMap : public GrowableBitMap<CHeapBitMap> {
+class CHeapBitMap : public GrowableBitMap {
   // NMT memory type
   const MEMFLAGS _flags;
 
@@ -634,13 +645,15 @@ class CHeapBitMap : public GrowableBitMap<CHeapBitMap> {
   // allocated memory from leaking out to other instances.
   NONCOPYABLE(CHeapBitMap);
 
+ protected:
+  virtual bm_word_t* reallocate(bm_word_t* old_map, idx_t old_size_in_words, idx_t new_size_in_words, bool clear) const;
+
  public:
   explicit CHeapBitMap(MEMFLAGS flags) : GrowableBitMap(0, false), _flags(flags) {}
   CHeapBitMap(idx_t size_in_bits, MEMFLAGS flags, bool clear = true);
   ~CHeapBitMap();
 
   bm_word_t* allocate(idx_t size_in_words) const;
-  bm_word_t* reallocate(bm_word_t* old_map, size_t old_size_in_words, size_t new_size_in_words) const;
   void free(bm_word_t* map, idx_t size_in_words) const;
 };
 
