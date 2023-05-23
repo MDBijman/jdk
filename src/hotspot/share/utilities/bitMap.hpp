@@ -572,7 +572,7 @@ class GrowableBitMap : public BitMap {
 
   virtual void free(bm_word_t* map, idx_t size_in_words) const = 0;
 
-  virtual bm_word_t* reallocate(bm_word_t* map, idx_t old_size_in_bits, idx_t new_size_in_bits, bool clear) const;
+  virtual bm_word_t* reallocate(bm_word_t* map, idx_t old_size_in_bits, idx_t new_size_in_bits) const;
 
  public:
  
@@ -595,7 +595,25 @@ class GrowableBitMap : public BitMap {
   // Old bits are transferred to the new memory
   // and the extended memory is cleared.
   void resize(idx_t new_size_in_bits, bool clear = true) {
-    bm_word_t* new_map = reallocate(map(), size(), new_size_in_bits, clear);
+    const size_t old_size_in_bits = size();
+    bm_word_t* const old_map = map();
+
+    const size_t old_size_in_words = calc_size_in_words(size());
+    const size_t new_size_in_words = calc_size_in_words(new_size_in_bits);
+
+    bm_word_t* new_map = reallocate(map(), size(), new_size_in_bits);
+
+    if (clear && (old_size_in_bits > new_size_in_bits)) {
+      // If old_size_in_bits is not word-aligned, then the preceding
+      // copy can include some trailing bits in the final copied word
+      // that also need to be cleared.  See clear_range_within_word.
+      bm_word_t mask = bit_mask(old_size_in_bits) - 1;
+      new_map[raw_to_words_align_down(old_size_in_bits)] &= mask;
+
+      // Clear the remaining full words.
+      clear_range_of_words(new_map, old_size_in_words, new_size_in_words);
+    }
+
     update(new_map, new_size_in_bits);
   }
 };
@@ -646,7 +664,7 @@ class CHeapBitMap : public GrowableBitMap {
   NONCOPYABLE(CHeapBitMap);
 
  protected:
-  virtual bm_word_t* reallocate(bm_word_t* old_map, idx_t old_size_in_words, idx_t new_size_in_words, bool clear) const;
+  virtual bm_word_t* reallocate(bm_word_t* old_map, idx_t old_size_in_words, idx_t new_size_in_words) const;
 
  public:
   explicit CHeapBitMap(MEMFLAGS flags) : GrowableBitMap(0, false), _flags(flags) {}
